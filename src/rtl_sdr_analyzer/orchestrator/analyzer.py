@@ -8,6 +8,7 @@ from typing import Optional
 from rtl_sdr_analyzer.core.rtlsdr_base import RTLSDRBase
 from rtl_sdr_analyzer.core.signal_processor import SignalProcessor
 from rtl_sdr_analyzer.detection.detector import SignalDetector
+from rtl_sdr_analyzer.exporters.base import Exporter
 from rtl_sdr_analyzer.orchestrator.event_bus import EventBus
 from rtl_sdr_analyzer.visualization.strategy import VisualizationStrategy
 
@@ -49,23 +50,30 @@ class Analyzer:
         self.max_errors = max_errors
         self._running = False
         self._error_count = 0
+        self._exporters: list[Exporter] = []
+
+    def add_exporter(self, exporter: Exporter) -> None:
+        """Register an exporter to be closed on shutdown."""
+        self._exporters.append(exporter)
+        logger.info("Registered exporter: %s", type(exporter).__name__)
 
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
 
-    def _handle_signal(self, signum: int, _frame: object) -> None:
-        """Set the running flag to False on SIGINT/SIGTERM."""
-        logger.info("Shutdown signal %d received", signum)
+    def _handle_sigterm(self, signum: int, _frame: object) -> None:
+        """Handle SIGTERM for daemon mode."""
+        logger.info("SIGTERM received — shutting down.")
         self._running = False
 
     def start(self) -> None:
         """Start the acquisition and analysis loop.
 
-        Blocks until the visualization loop exits or a signal is received.
+        Blocks until the visualization loop exits or KeyboardInterrupt is raised.
         """
-        signal.signal(signal.SIGINT, self._handle_signal)
-        signal.signal(signal.SIGTERM, self._handle_signal)
+        # Only trap SIGTERM; leave SIGINT to raise KeyboardInterrupt naturally
+        # so Ctrl+C works immediately without waiting for socket timeouts.
+        signal.signal(signal.SIGTERM, self._handle_sigterm)
         self._running = True
         self._error_count = 0
         logger.info("Starting signal analyzer...")
@@ -73,17 +81,30 @@ class Analyzer:
         try:
             with self.rtlsdr:
                 self.visualization.start(self._update)
+        except KeyboardInterrupt:
+            logger.info("Interrupted by user.")
         except Exception as exc:  # noqa: BLE001
             logger.error("Analyzer failed: %s", exc)
             raise
         finally:
             self._running = False
+            self._close_exporters()
             logger.info("Analyzer stopped.")
 
     def stop(self) -> None:
         """Request graceful shutdown."""
         self._running = False
         self.visualization.stop()
+
+    def _close_exporters(self) -> None:
+        """Close all registered exporters."""
+        for exporter in self._exporters:
+            try:
+                exporter.close()
+                logger.debug("Closed exporter: %s", type(exporter).__name__)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Error closing exporter: %s", exc)
+        self._exporters.clear()
 
     # ------------------------------------------------------------------
     # Update loop

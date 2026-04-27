@@ -141,16 +141,23 @@ def analyze(
 
     event_bus = EventBus()
 
+    if export_format and not export_path:
+        typer.echo("--export-path is required when --export-format is set", err=True)
+        raise typer.Exit(1)
+
+    if export_path and not export_format:
+        typer.echo("--export-format is required when --export-path is set", err=True)
+        raise typer.Exit(1)
+
     if export_format and export_path:
         if export_format.lower() == "csv":
             exporter = CsvExporter(output_path=export_path)
-            event_bus.subscribe(exporter.export)
         elif export_format.lower() == "json":
             exporter = JsonExporter(output_path=export_path)
-            event_bus.subscribe(exporter.export)
         else:
             typer.echo(f"Unknown export format: {export_format}", err=True)
             raise typer.Exit(1)
+        event_bus.subscribe(exporter.export)
 
     analyzer = Analyzer(
         rtlsdr=rtlsdr,
@@ -159,7 +166,14 @@ def analyze(
         visualization=visualization,
         event_bus=event_bus,
     )
-    analyzer.start()
+
+    if export_format and export_path:
+        analyzer.add_exporter(exporter)
+
+    try:
+        analyzer.start()
+    finally:
+        logger.info("Exiting rtl-sdr-analyzer.")
 
 
 @app.command()
