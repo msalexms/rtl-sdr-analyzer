@@ -3,7 +3,7 @@
 import csv
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, TextIO
+from typing import Any, Optional, TextIO
 
 from rtl_sdr_analyzer.detection.events import JammingEvent
 
@@ -49,7 +49,7 @@ class CsvExporter(Exporter):
         if self._writer is None:
             logger.warning("CSV exporter has no output path configured")
             return
-        row: Dict[str, Any] = event.model_dump(mode="json")
+        row: dict[str, Any] = event.model_dump(mode="json")
         self._writer.writerow(row)
         if self._file is not None:
             self._file.flush()

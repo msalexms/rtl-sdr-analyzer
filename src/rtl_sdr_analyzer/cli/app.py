@@ -4,7 +4,7 @@ import logging
 import os
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 import typer
@@ -433,7 +433,7 @@ def config_show(
     if format.lower() == "json":
         typer.echo(settings.model_dump_json(indent=2))
     else:
-        import yaml
+        import yaml  # type: ignore[import-untyped]
         typer.echo(yaml.safe_dump(settings.model_dump(), sort_keys=False))
 
 

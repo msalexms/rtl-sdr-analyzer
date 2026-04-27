@@ -17,16 +17,30 @@ def mock_rtlsdr() -> MagicMock:
     return rtl
 
 
+def _cycling_side_effect(values: list) -> object:
+    """Return a callable that yields values then None forever."""
+    it = iter(values)
+
+    def _fn() -> object:
+        try:
+            return next(it)
+        except StopIteration:
+            return None
+
+    return _fn
+
+
 class TestIQRecorder:
     def test_raw_recording(self, tmp_path: Path, mock_rtlsdr: MagicMock) -> None:
         output = tmp_path / "test.raw"
 
         # Simulate 2048 samples per read
-        mock_rtlsdr.read_samples.side_effect = [
-            np.ones(2048, dtype=np.complex64) * 0.5,
-            np.ones(2048, dtype=np.complex64) * 0.5,
-            None,
-        ]
+        mock_rtlsdr.read_samples.side_effect = _cycling_side_effect(
+            [
+                np.ones(2048, dtype=np.complex64) * 0.5,
+                np.ones(2048, dtype=np.complex64) * 0.5,
+            ]
+        )
 
         with IQRecorder(output, format="raw") as rec:
             rec.record(mock_rtlsdr, duration=0.1)
@@ -37,10 +51,11 @@ class TestIQRecorder:
     def test_numpy_recording(self, tmp_path: Path, mock_rtlsdr: MagicMock) -> None:
         output = tmp_path / "test.npz"
 
-        mock_rtlsdr.read_samples.side_effect = [
-            np.ones(2048, dtype=np.complex64) * 0.3,
-            None,
-        ]
+        mock_rtlsdr.read_samples.side_effect = _cycling_side_effect(
+            [
+                np.ones(2048, dtype=np.complex64) * 0.3,
+            ]
+        )
 
         with IQRecorder(output, format="numpy") as rec:
             rec.record(mock_rtlsdr, duration=0.1)

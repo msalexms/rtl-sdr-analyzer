@@ -5,7 +5,7 @@ and power calculations with proper error handling.
 """
 
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 from scipy.fft import fft, fftshift
@@ -53,7 +53,7 @@ class SignalProcessor:
         """
         nyquist = 0.5 * self.fft_size
         cutoff = cutoff_frac * nyquist
-        return butter(order, cutoff / nyquist)
+        return butter(order, cutoff / nyquist)  # type: ignore[no-any-return]
 
     def process_samples(self, iq_data: Optional[np.ndarray]) -> Optional[np.ndarray]:
         """Process IQ samples into a power spectrum.
@@ -85,7 +85,7 @@ class SignalProcessor:
             )
 
             logger.debug("Signal processed successfully")
-            return power_db_smooth
+            return power_db_smooth  # type: ignore[no-any-return]
 
         except Exception as exc:  # noqa: BLE001
             logger.error("Error processing samples: %s", exc)
@@ -95,7 +95,7 @@ class SignalProcessor:
         self,
         spectrum: np.ndarray,
         freq_range: np.ndarray,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Calculate various signal metrics from the spectrum.
 
         Args:

@@ -3,7 +3,7 @@
 import logging
 import time
 from pathlib import Path
-from typing import Any, BinaryIO, List, Optional
+from typing import Any, BinaryIO, Optional
 
 import numpy as np
 

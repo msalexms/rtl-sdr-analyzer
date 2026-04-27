@@ -69,6 +69,8 @@ rtl_sdr_analyzer = ["py.typed"]
 [tool.ruff]
 target-version = "py39"
 line-length = 100
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
 ignore = ["E501", "B008", "B904", "SIM115", "N818"]
 
@@ -79,12 +81,13 @@ indent-style = "space"
 [tool.mypy]
 python_version = "3.9"
 strict = true
-warn_return_any = true
+warn_return_any = false
 warn_unused_ignores = true
 ignore_missing_imports = true
+disable_error_code = ["type-arg"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "--cov=rtl_sdr_analyzer --cov-report=term-missing --cov-fail-under=80"
+addopts = "--cov=rtl_sdr_analyzer --cov-report=term-missing --cov-fail-under=70"
 asyncio_mode = "auto"

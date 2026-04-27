@@ -2,7 +2,7 @@
 
 import logging
 from collections import deque
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Optional
 
 import numpy as np
 

@@ -1,6 +1,6 @@
 """Visualization strategy protocol."""
 
-from typing import Any, Callable, List, Optional, Protocol, runtime_checkable
+from typing import Any, Callable, Optional, Protocol, runtime_checkable
 
 import numpy as np
 

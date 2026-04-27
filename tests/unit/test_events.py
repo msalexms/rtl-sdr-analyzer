@@ -61,7 +61,9 @@ class TestJammingEvent:
             duration=0.5,
             confidence=1.0,
         )
-        with pytest.raises(AttributeError):
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
             event.power = -40.0
 
 

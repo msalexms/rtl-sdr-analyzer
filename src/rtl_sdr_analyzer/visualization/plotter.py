@@ -2,7 +2,7 @@
 
 import logging
 from collections import deque
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np

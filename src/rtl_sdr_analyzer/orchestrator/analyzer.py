@@ -3,7 +3,7 @@
 import logging
 import signal
 import time
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from rtl_sdr_analyzer.core.rtlsdr_base import RTLSDRBase
 from rtl_sdr_analyzer.core.signal_processor import SignalProcessor

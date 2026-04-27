@@ -1,13 +1,13 @@
 """Integration tests for Typer CLI commands."""
 
 from pathlib import Path
+from unittest.mock import patch
 
-import pytest
 from typer.testing import CliRunner
 
 from rtl_sdr_analyzer.cli.app import app
 
-runner = CliRunner()
+runner = CliRunner(env={"NO_COLOR": "1"})
 
 
 class TestAnalyzeCommand:
@@ -17,12 +17,16 @@ class TestAnalyzeCommand:
         assert "--freq" in result.output
         assert "--headless" in result.output
 
-    def test_analyze_stub_headless(self) -> None:
+    @patch("rtl_sdr_analyzer.cli.app.RTLSDRBase.connect")
+    def test_analyze_stub_headless(self, mock_connect: object) -> None:
         """Run analyze in headless mode with mocked hardware.
 
         Because the analyzer tries to open a real socket, we expect a
         connection error here — the test validates CLI wiring.
         """
+        from rtl_sdr_analyzer.core.rtlsdr_base import RTLSDRException
+
+        mock_connect.side_effect = RTLSDRException("Connection refused")
         result = runner.invoke(app, ["analyze", "--headless", "--host", "127.0.0.1"])
         # Will fail to connect, but CLI should parse correctly
         assert "Failed to connect" in result.output or result.exit_code != 0
@@ -55,7 +59,13 @@ class TestConfigCommands:
 
 
 class TestRecordCommand:
-    def test_record_stub(self) -> None:
-        result = runner.invoke(app, ["record", "/tmp/test.iq"])
+    @patch("rtl_sdr_analyzer.cli.app.RTLSDRBase")
+    def test_record_stub(self, mock_rtl_cls: object) -> None:
+        mock_rtl = mock_rtl_cls.return_value
+        mock_rtl.__enter__ = lambda s: s
+        mock_rtl.__exit__ = lambda *a: None
+        mock_rtl.read_samples.return_value = None
+
+        result = runner.invoke(app, ["record", "/tmp/test.iq", "--duration", "0.1"])
         assert result.exit_code == 0
-        assert "Not yet implemented" in result.output
+        assert "saved to" in result.output

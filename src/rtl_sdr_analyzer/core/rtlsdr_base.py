@@ -183,7 +183,7 @@ class RTLSDRBase:
 
             if len(iq) >= self.fft_size:
                 logger.debug("Received %d samples", self.fft_size)
-                return iq[: self.fft_size]
+                return iq[: self.fft_size]  # type: ignore[no-any-return]
             return None
 
         except OSError as exc:

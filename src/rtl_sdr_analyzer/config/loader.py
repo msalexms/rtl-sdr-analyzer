@@ -2,16 +2,16 @@
 
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 from .models import Settings
 
 
 def load_settings(
     config_path: Union[Path, str, None] = None,
-    cli_overrides: Optional[Dict[str, Any]] = None,
+    cli_overrides: Optional[dict[str, Any]] = None,
 ) -> Settings:
     """Load and merge configuration sources.
 

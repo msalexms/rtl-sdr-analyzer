@@ -4,9 +4,7 @@ import logging
 import logging.config
 
 import structlog
-
 import structlog.stdlib
-
 
 DEFAULT_SHARED_PROCESSORS: list[structlog.types.Processor] = [
     structlog.contextvars.merge_contextvars,
