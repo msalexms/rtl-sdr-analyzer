@@ -72,14 +72,15 @@ class HeadlessVisualization:
         return []
 
     def start(self, update_func) -> None:
-        """Run the update loop without matplotlib."""
+        """Run the update loop without matplotlib.
+
+        Relies on the outer signal handler (registered by Analyzer) to set
+        _running = False on SIGINT/SIGTERM.
+        """
         self._running = True
         while self._running:
             try:
                 update_func(0)
-            except KeyboardInterrupt:
-                logger.info("Interrupted — shutting down.")
-                self.stop()
             except Exception as exc:  # noqa: BLE001
                 logger.error("Error in headless update loop: %s", exc)
 

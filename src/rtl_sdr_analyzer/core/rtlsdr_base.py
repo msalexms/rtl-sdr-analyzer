@@ -170,8 +170,12 @@ class RTLSDRBase:
 
         try:
             raw_data = self.sock.recv(self.fft_size * 2 * 64)
-            if not raw_data:
+            if not raw_data or len(raw_data) < 2:
                 return None
+
+            # Ensure even byte count (pairs of I/Q samples)
+            if len(raw_data) % 2 != 0:
+                raw_data = raw_data[:-1]
 
             # Convert interleaved uint8 → complex float64
             data = np.frombuffer(raw_data, dtype=np.uint8).reshape(-1, 2)
