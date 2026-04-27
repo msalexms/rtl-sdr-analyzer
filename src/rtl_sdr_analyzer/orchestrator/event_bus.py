@@ -1,7 +1,7 @@
 """Simple publish/subscribe event bus for decoupled components."""
 
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 from rtl_sdr_analyzer.detection.events import JammingEvent
 

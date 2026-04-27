@@ -7,15 +7,15 @@ from typer.testing import CliRunner
 
 from rtl_sdr_analyzer.cli.app import app
 
-runner = CliRunner(env={"NO_COLOR": "1"})
+runner = CliRunner()
 
 
 class TestAnalyzeCommand:
     def test_help(self) -> None:
         result = runner.invoke(app, ["analyze", "--help"])
         assert result.exit_code == 0
-        assert "--freq" in result.output
-        assert "--headless" in result.output
+        assert "--freq" in result.stdout
+        assert "--headless" in result.stdout
 
     @patch("rtl_sdr_analyzer.cli.app.RTLSDRBase.connect")
     def test_analyze_stub_headless(self, mock_connect: object) -> None:

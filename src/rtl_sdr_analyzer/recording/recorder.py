@@ -3,7 +3,7 @@
 import logging
 import time
 from pathlib import Path
-from typing import Any, BinaryIO, Optional
+from typing import Any, BinaryIO
 
 import numpy as np
 
@@ -34,7 +34,7 @@ class IQRecorder:
         self.output_path = Path(output_path)
         self.format = format.lower()
         self.sample_rate = sample_rate
-        self._file: Optional[BinaryIO] = None
+        self._file: BinaryIO | None = None
         self._samples: list[np.ndarray] = []
         self._total_bytes = 0
 
@@ -46,9 +46,9 @@ class IQRecorder:
 
     def __exit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[Any],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: Any | None,
     ) -> None:
         if self.format == "raw":
             if self._file is not None:

@@ -3,7 +3,7 @@
 import csv
 import logging
 from pathlib import Path
-from typing import Any, Optional, TextIO
+from typing import Any, TextIO
 
 from rtl_sdr_analyzer.detection.events import JammingEvent
 
@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 class CsvExporter(Exporter):
     """Append detection events to a CSV file."""
 
-    def __init__(self, output_path: Optional[Path] = None) -> None:
+    def __init__(self, output_path: Path | None = None) -> None:
         super().__init__(output_path)
-        self._file: Optional[TextIO] = None
-        self._writer: Optional[csv.DictWriter[str]] = None
+        self._file: TextIO | None = None
+        self._writer: csv.DictWriter[str] | None = None
 
         if self.output_path is not None:
             self._open_file()

@@ -6,7 +6,7 @@ import sqlite3
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 
 from rtl_sdr_analyzer.detection.events import JammingEvent
 
@@ -49,9 +49,9 @@ class EventStore:
         store.insert_event(event)
     """
 
-    def __init__(self, db_path: Union[Path, str] = "rtl_sdr_analyzer.db"):
+    def __init__(self, db_path: Path | str = "rtl_sdr_analyzer.db"):
         self.db_path = Path(db_path)
-        self._session_id: Optional[int] = None
+        self._session_id: int | None = None
 
     @contextmanager
     def _connect(self) -> Generator[sqlite3.Connection, None, None]:
@@ -136,7 +136,7 @@ class EventStore:
             ).fetchall()
         return [dict(row) for row in rows]
 
-    def get_event_count(self, since: Optional[str] = None) -> int:
+    def get_event_count(self, since: str | None = None) -> int:
         """Get total event count, optionally since a timestamp."""
         with self._connect() as conn:
             if since:
@@ -190,7 +190,7 @@ class EventStore:
             ).fetchall()
         return [dict(row) for row in rows]
 
-    def export_to_csv(self, output_path: Path, since: Optional[str] = None) -> int:
+    def export_to_csv(self, output_path: Path, since: str | None = None) -> int:
         """Export events to CSV and return row count."""
         with self._connect() as conn:
             if since:
@@ -199,9 +199,7 @@ class EventStore:
                     (since,),
                 ).fetchall()
             else:
-                rows = conn.execute(
-                    "SELECT * FROM events ORDER BY timestamp"
-                ).fetchall()
+                rows = conn.execute("SELECT * FROM events ORDER BY timestamp").fetchall()
 
         if not rows:
             logger.warning("No events to export.")

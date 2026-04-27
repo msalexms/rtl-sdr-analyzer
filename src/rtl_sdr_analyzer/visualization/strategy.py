@@ -1,6 +1,7 @@
 """Visualization strategy protocol."""
 
-from typing import Any, Callable, Optional, Protocol, runtime_checkable
+from collections.abc import Callable
+from typing import Any, Protocol, runtime_checkable
 
 import numpy as np
 
@@ -21,8 +22,8 @@ class VisualizationStrategy(Protocol):
 
     def update(
         self,
-        spectrum: Optional[np.ndarray],
-        event: Optional[JammingEvent] = None,
+        spectrum: np.ndarray | None,
+        event: JammingEvent | None = None,
     ) -> list[Any]:
         """Update the display with new spectrum data."""
         ...

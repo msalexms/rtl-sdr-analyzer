@@ -2,7 +2,8 @@
 
 import logging
 from collections import deque
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 
@@ -37,8 +38,8 @@ class HeadlessVisualization:
 
     def update(
         self,
-        spectrum: Optional[np.ndarray],
-        event: Optional[JammingEvent] = None,
+        spectrum: np.ndarray | None,
+        event: JammingEvent | None = None,
     ) -> list[Any]:
         """Log spectrum statistics instead of rendering."""
         if spectrum is None:

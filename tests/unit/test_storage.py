@@ -82,7 +82,9 @@ class TestEventStore:
 
 
 class TestStatsDashboard:
-    def test_show_summary(self, temp_db: EventStore, tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    def test_show_summary(
+        self, temp_db: EventStore, tmp_path: Path, capsys: pytest.CaptureFixture
+    ) -> None:
         dashboard = StatsDashboard(temp_db.db_path)
         # Just verify it doesn't crash
         dashboard.show_summary()

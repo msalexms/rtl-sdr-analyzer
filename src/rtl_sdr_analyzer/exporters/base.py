@@ -2,7 +2,6 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional
 
 from rtl_sdr_analyzer.detection.events import JammingEvent
 
@@ -10,7 +9,7 @@ from rtl_sdr_analyzer.detection.events import JammingEvent
 class Exporter(ABC):
     """Base interface for persisting :class:`JammingEvent` objects."""
 
-    def __init__(self, output_path: Optional[Path] = None) -> None:
+    def __init__(self, output_path: Path | None = None) -> None:
         self.output_path = output_path
 
     @abstractmethod

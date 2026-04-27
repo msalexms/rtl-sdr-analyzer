@@ -4,7 +4,7 @@ import logging
 import os
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import typer
@@ -35,6 +35,7 @@ app = typer.Typer(name="rtl-sdr-analyzer")
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _display_available() -> bool:
     """Check if a graphical display is available for matplotlib."""
     if os.name == "posix" and not os.environ.get("DISPLAY"):
@@ -64,24 +65,42 @@ _log_format_option = typer.Option("text", "--log-format", help="Log format: text
 
 @app.command()
 def analyze(
-    config: Optional[Path] = _config_option,
-    host: Optional[str] = typer.Option(None, "--host", help="RTL-TCP server host"),
-    port: Optional[int] = typer.Option(None, "--port", help="RTL-TCP server port"),
-    freq: Optional[float] = typer.Option(None, "--freq", help="Center frequency in Hz"),
-    sample_rate: Optional[float] = typer.Option(None, "--sample-rate", help="Sample rate in Hz"),
-    fft_size: Optional[int] = typer.Option(None, "--fft-size", help="FFT size"),
-    power_threshold: Optional[float] = typer.Option(None, "--power-threshold", help="Power threshold in dB"),
-    bandwidth_threshold: Optional[float] = typer.Option(None, "--bandwidth-threshold", help="Bandwidth threshold in Hz"),
-    z_score_threshold: Optional[float] = typer.Option(None, "--z-score-threshold", help="Z-score threshold"),
-    detection_window: Optional[int] = typer.Option(None, "--detection-window", help="Detection window size"),
-    min_duration: Optional[float] = typer.Option(None, "--min-duration", help="Minimum event duration in seconds"),
+    config: Path | None = _config_option,
+    host: str | None = typer.Option(None, "--host", help="RTL-TCP server host"),
+    port: int | None = typer.Option(None, "--port", help="RTL-TCP server port"),
+    freq: float | None = typer.Option(None, "--freq", help="Center frequency in Hz"),
+    sample_rate: float | None = typer.Option(None, "--sample-rate", help="Sample rate in Hz"),
+    fft_size: int | None = typer.Option(None, "--fft-size", help="FFT size"),
+    power_threshold: float | None = typer.Option(
+        None, "--power-threshold", help="Power threshold in dB"
+    ),
+    bandwidth_threshold: float | None = typer.Option(
+        None, "--bandwidth-threshold", help="Bandwidth threshold in Hz"
+    ),
+    z_score_threshold: float | None = typer.Option(
+        None, "--z-score-threshold", help="Z-score threshold"
+    ),
+    detection_window: int | None = typer.Option(
+        None, "--detection-window", help="Detection window size"
+    ),
+    min_duration: float | None = typer.Option(
+        None, "--min-duration", help="Minimum event duration in seconds"
+    ),
     test_mode: bool = typer.Option(False, "--test-mode", help="Enable sensitive test mode"),
-    waterfall_length: Optional[int] = typer.Option(None, "--waterfall-length", help="Waterfall history length"),
-    update_interval: Optional[int] = typer.Option(None, "--update-interval", help="Display update interval in ms"),
+    waterfall_length: int | None = typer.Option(
+        None, "--waterfall-length", help="Waterfall history length"
+    ),
+    update_interval: int | None = typer.Option(
+        None, "--update-interval", help="Display update interval in ms"
+    ),
     headless: bool = typer.Option(False, "--headless", help="Run without GUI"),
-    export_format: Optional[str] = typer.Option(None, "--export-format", help="Event export format: csv or json"),
-    export_path: Optional[Path] = typer.Option(None, "--export-path", help="Path for exported events"),
-    db_path: Optional[Path] = typer.Option(None, "--db-path", help="SQLite database path for event storage"),
+    export_format: str | None = typer.Option(
+        None, "--export-format", help="Event export format: csv or json"
+    ),
+    export_path: Path | None = typer.Option(None, "--export-path", help="Path for exported events"),
+    db_path: Path | None = typer.Option(
+        None, "--db-path", help="SQLite database path for event storage"
+    ),
     log_level: str = _log_level_option,
     log_format: str = _log_format_option,
 ) -> None:
@@ -156,7 +175,7 @@ def analyze(
         raise typer.Exit(1)
 
     # Setup file exporters
-    exporter: Optional[Any] = None
+    exporter: Any | None = None
     if export_format and export_path:
         if export_format.lower() == "csv":
             exporter = CsvExporter(output_path=export_path)
@@ -168,7 +187,7 @@ def analyze(
         event_bus.subscribe(exporter.export)
 
     # Setup SQLite storage
-    store: Optional[EventStore] = None
+    store: EventStore | None = None
     if db_path:
         store = EventStore(db_path)
         store.init_schema()
@@ -208,11 +227,11 @@ def record(
     output: Path = typer.Argument(..., help="Output file path for IQ samples"),
     duration: float = typer.Option(10.0, "--duration", help="Recording duration in seconds"),
     format: str = typer.Option("raw", "--format", help="Output format: raw or numpy"),
-    config: Optional[Path] = _config_option,
-    host: Optional[str] = typer.Option(None, "--host"),
-    port: Optional[int] = typer.Option(None, "--port"),
-    freq: Optional[float] = typer.Option(None, "--freq"),
-    sample_rate: Optional[float] = typer.Option(None, "--sample-rate"),
+    config: Path | None = _config_option,
+    host: str | None = typer.Option(None, "--host"),
+    port: int | None = typer.Option(None, "--port"),
+    freq: float | None = typer.Option(None, "--freq"),
+    sample_rate: float | None = typer.Option(None, "--sample-rate"),
     log_level: str = _log_level_option,
 ) -> None:
     """Record raw IQ samples to a file for offline analysis."""
@@ -249,32 +268,37 @@ def sweep(
     end_freq: float = typer.Argument(..., help="End frequency in Hz"),
     step: float = typer.Option(1e6, "--step", help="Frequency step in Hz"),
     dwell: float = typer.Option(2.0, "--dwell", help="Dwell time per frequency in seconds"),
-    config: Optional[Path] = _config_option,
-    host: Optional[str] = typer.Option(None, "--host"),
-    port: Optional[int] = typer.Option(None, "--port"),
-    sample_rate: Optional[float] = typer.Option(None, "--sample-rate"),
-    fft_size: Optional[int] = typer.Option(None, "--fft-size"),
-    power_threshold: Optional[float] = typer.Option(None, "--power-threshold"),
-    bandwidth_threshold: Optional[float] = typer.Option(None, "--bandwidth-threshold"),
-    z_score_threshold: Optional[float] = typer.Option(None, "--z-score-threshold"),
+    config: Path | None = _config_option,
+    host: str | None = typer.Option(None, "--host"),
+    port: int | None = typer.Option(None, "--port"),
+    sample_rate: float | None = typer.Option(None, "--sample-rate"),
+    fft_size: int | None = typer.Option(None, "--fft-size"),
+    power_threshold: float | None = typer.Option(None, "--power-threshold"),
+    bandwidth_threshold: float | None = typer.Option(None, "--bandwidth-threshold"),
+    z_score_threshold: float | None = typer.Option(None, "--z-score-threshold"),
     headless: bool = typer.Option(True, "--headless", help="Run without GUI"),
-    export_format: Optional[str] = typer.Option(None, "--export-format"),
-    export_path: Optional[Path] = typer.Option(None, "--export-path"),
-    db_path: Optional[Path] = typer.Option(None, "--db-path"),
+    export_format: str | None = typer.Option(None, "--export-format"),
+    export_path: Path | None = typer.Option(None, "--export-path"),
+    db_path: Path | None = typer.Option(None, "--db-path"),
     log_level: str = _log_level_option,
 ) -> None:
     """Sweep a frequency range and detect signals at each step."""
     setup_logging(level=log_level)
 
     overrides = build_cli_overrides(
-        host=host, port=port, sample_rate=sample_rate, fft_size=fft_size,
+        host=host,
+        port=port,
+        sample_rate=sample_rate,
+        fft_size=fft_size,
         power_threshold=power_threshold,
         bandwidth_threshold=bandwidth_threshold,
         z_score_threshold=z_score_threshold,
     )
     settings = load_settings(config_path=config, cli_overrides=overrides)
 
-    typer.echo(f"Sweeping {start_freq/1e6:.1f} MHz to {end_freq/1e6:.1f} MHz (step={step/1e6:.1f} MHz, dwell={dwell}s)")
+    typer.echo(
+        f"Sweeping {start_freq / 1e6:.1f} MHz to {end_freq / 1e6:.1f} MHz (step={step / 1e6:.1f} MHz, dwell={dwell}s)"
+    )
 
     # Build components
     rtlsdr = RTLSDRBase(
@@ -300,7 +324,7 @@ def sweep(
     event_bus = EventBus()
 
     # Setup exporters
-    exporter: Optional[Any] = None
+    exporter: Any | None = None
     if export_format and export_path:
         if export_format.lower() == "csv":
             exporter = CsvExporter(output_path=export_path)
@@ -312,7 +336,7 @@ def sweep(
         event_bus.subscribe(exporter.export)
 
     # Setup SQLite
-    store: Optional[EventStore] = None
+    store: EventStore | None = None
     if db_path:
         store = EventStore(db_path)
         store.init_schema()
@@ -358,15 +382,15 @@ def sweep(
                     if spectrum is None:
                         continue
 
-                    event = detector.detect_signal(
-                        spectrum, rtlsdr.freq_range, time.time()
-                    )
+                    event = detector.detect_signal(spectrum, rtlsdr.freq_range, time.time())
                     if event is not None:
                         event_bus.publish(event)
                         total_events += 1
                         logger.info(
                             "[%.3f MHz] Detection: power=%.1f dB, bw=%.0f Hz",
-                            current_freq / 1e6, event.power, event.bandwidth,
+                            current_freq / 1e6,
+                            event.power,
+                            event.bandwidth,
                         )
 
                 current_freq += step
@@ -385,8 +409,8 @@ def stats(
     top_freqs: bool = typer.Option(True, "--top-freqs", help="Show top frequencies"),
     hourly: bool = typer.Option(True, "--hourly", help="Show hourly activity"),
     recent: int = typer.Option(10, "--recent", help="Number of recent events to show"),
-    export_csv: Optional[Path] = typer.Option(None, "--export-csv", help="Export events to CSV"),
-    since_hours: Optional[int] = typer.Option(None, "--since-hours", help="Filter events by hours"),
+    export_csv: Path | None = typer.Option(None, "--export-csv", help="Export events to CSV"),
+    since_hours: int | None = typer.Option(None, "--since-hours", help="Filter events by hours"),
 ) -> None:
     """Display statistics dashboard for detection events."""
     if not db_path.exists():
@@ -425,7 +449,7 @@ def config_validate(
 
 @app.command(name="config-show")
 def config_show(
-    config: Optional[Path] = _config_option,
+    config: Path | None = _config_option,
     format: str = typer.Option("yaml", "--format", help="Output format: yaml or json"),
 ) -> None:
     """Show the resolved configuration (defaults + env + file + CLI)."""
@@ -434,6 +458,7 @@ def config_show(
         typer.echo(settings.model_dump_json(indent=2))
     else:
         import yaml  # type: ignore[import-untyped]
+
         typer.echo(yaml.safe_dump(settings.model_dump(), sort_keys=False))
 
 

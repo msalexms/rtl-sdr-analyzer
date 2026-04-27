@@ -10,7 +10,6 @@ import socket
 import struct
 from enum import IntEnum
 from types import TracebackType
-from typing import Optional
 
 import numpy as np
 from scipy.signal.windows import blackmanharris
@@ -63,7 +62,7 @@ class RTLSDRBase:
         self.center_freq = center_freq
         self.sample_rate = sample_rate
         self.fft_size = fft_size
-        self.sock: Optional[socket.socket] = None
+        self.sock: socket.socket | None = None
         self.window = blackmanharris(fft_size)
 
         # Frequency range in MHz for spectrum plotting
@@ -83,9 +82,9 @@ class RTLSDRBase:
 
     def __exit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         self._cleanup()
 
@@ -122,9 +121,9 @@ class RTLSDRBase:
         commands: list[tuple[int, int]] = [
             (RtlTcpCommand.SET_FREQUENCY, int(self.center_freq)),
             (RtlTcpCommand.SET_SAMPLE_RATE, int(self.sample_rate)),
-            (RtlTcpCommand.SET_GAIN_MODE, 0),          # auto gain
-            (RtlTcpCommand.SET_AGC_MODE, 0),           # AGC off
-            (RtlTcpCommand.SET_DIRECT_SAMPLING, 1),    # direct sampling
+            (RtlTcpCommand.SET_GAIN_MODE, 0),  # auto gain
+            (RtlTcpCommand.SET_AGC_MODE, 0),  # AGC off
+            (RtlTcpCommand.SET_DIRECT_SAMPLING, 1),  # direct sampling
         ]
 
         try:
@@ -155,7 +154,7 @@ class RTLSDRBase:
     # Sample acquisition
     # ------------------------------------------------------------------
 
-    def read_samples(self) -> Optional[np.ndarray]:
+    def read_samples(self) -> np.ndarray | None:
         """Read IQ samples from the RTL-SDR device.
 
         Returns:
@@ -183,7 +182,7 @@ class RTLSDRBase:
 
             if len(iq) >= self.fft_size:
                 logger.debug("Received %d samples", self.fft_size)
-                return iq[: self.fft_size]  # type: ignore[no-any-return]
+                return iq[: self.fft_size]
             return None
 
         except OSError as exc:

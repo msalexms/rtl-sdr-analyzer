@@ -36,7 +36,9 @@ def freq_range() -> np.ndarray:
 
 
 class TestBaselineEstablishment:
-    def test_no_baseline_until_window_full(self, detector: SignalDetector, quiet_spectrum: np.ndarray, freq_range: np.ndarray) -> None:
+    def test_no_baseline_until_window_full(
+        self, detector: SignalDetector, quiet_spectrum: np.ndarray, freq_range: np.ndarray
+    ) -> None:
         for i in range(4):
             event = detector.detect_signal(quiet_spectrum, freq_range, float(i))
             assert event is None
@@ -48,7 +50,9 @@ class TestBaselineEstablishment:
 
 
 class TestDetectionLogic:
-    def test_no_signal_in_quiet(self, detector: SignalDetector, quiet_spectrum: np.ndarray, freq_range: np.ndarray) -> None:
+    def test_no_signal_in_quiet(
+        self, detector: SignalDetector, quiet_spectrum: np.ndarray, freq_range: np.ndarray
+    ) -> None:
         # Establish baseline
         for i in range(5):
             detector.detect_signal(quiet_spectrum, freq_range, float(i))
@@ -57,7 +61,13 @@ class TestDetectionLogic:
         event = detector.detect_signal(quiet_spectrum, freq_range, 5.0)
         assert event is None
 
-    def test_signal_detected_when_strong(self, detector: SignalDetector, quiet_spectrum: np.ndarray, loud_spectrum: np.ndarray, freq_range: np.ndarray) -> None:
+    def test_signal_detected_when_strong(
+        self,
+        detector: SignalDetector,
+        quiet_spectrum: np.ndarray,
+        loud_spectrum: np.ndarray,
+        freq_range: np.ndarray,
+    ) -> None:
         # Establish baseline
         for i in range(5):
             detector.detect_signal(quiet_spectrum, freq_range, float(i))
@@ -75,7 +85,13 @@ class TestDetectionLogic:
         assert event.snr is not None
         assert event.snr > 0
 
-    def test_signal_ends(self, detector: SignalDetector, quiet_spectrum: np.ndarray, loud_spectrum: np.ndarray, freq_range: np.ndarray) -> None:
+    def test_signal_ends(
+        self,
+        detector: SignalDetector,
+        quiet_spectrum: np.ndarray,
+        loud_spectrum: np.ndarray,
+        freq_range: np.ndarray,
+    ) -> None:
         for i in range(5):
             detector.detect_signal(quiet_spectrum, freq_range, float(i))
 
@@ -87,7 +103,9 @@ class TestDetectionLogic:
         assert detector.potential_signal is False
         assert detector.signal_start_time is None
 
-    def test_test_mode_any_criteria(self, quiet_spectrum: np.ndarray, freq_range: np.ndarray) -> None:
+    def test_test_mode_any_criteria(
+        self, quiet_spectrum: np.ndarray, freq_range: np.ndarray
+    ) -> None:
         # Use a long min_duration to avoid accidental confirmation.
         detector = SignalDetector(
             power_threshold=-70.0,
@@ -113,7 +131,9 @@ class TestDetectionLogic:
 
 
 class TestDetectionStats:
-    def test_stats_updated(self, detector: SignalDetector, quiet_spectrum: np.ndarray, freq_range: np.ndarray) -> None:
+    def test_stats_updated(
+        self, detector: SignalDetector, quiet_spectrum: np.ndarray, freq_range: np.ndarray
+    ) -> None:
         for i in range(5):
             detector.detect_signal(quiet_spectrum, freq_range, float(i))
 

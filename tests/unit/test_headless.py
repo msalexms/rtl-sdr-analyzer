@@ -21,14 +21,18 @@ def headless() -> HeadlessVisualization:
 
 
 class TestHeadlessVisualization:
-    def test_update_logs_stats(self, headless: HeadlessVisualization, caplog: pytest.LogCaptureFixture) -> None:
+    def test_update_logs_stats(
+        self, headless: HeadlessVisualization, caplog: pytest.LogCaptureFixture
+    ) -> None:
         caplog.set_level(logging.INFO)
         spectrum = np.full(2048, -50.0)
         headless.update(spectrum)
         headless.update(spectrum)
         assert any("Spectrum stats" in r.message for r in caplog.records)
 
-    def test_update_logs_detection(self, headless: HeadlessVisualization, caplog: pytest.LogCaptureFixture) -> None:
+    def test_update_logs_detection(
+        self, headless: HeadlessVisualization, caplog: pytest.LogCaptureFixture
+    ) -> None:
         caplog.set_level(logging.INFO)
         spectrum = np.full(2048, -50.0)
         event = JammingEvent(

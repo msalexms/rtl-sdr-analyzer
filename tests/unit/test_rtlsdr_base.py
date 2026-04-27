@@ -36,9 +36,9 @@ class TestReadSamples:
         mock_socket_instance = MagicMock()
         mock_socket_cls.return_value = mock_socket_instance
 
-        raw_data = np.random.default_rng(42).integers(
-            0, 256, 2 * 1024 * 64, dtype=np.uint8
-        ).tobytes()
+        raw_data = (
+            np.random.default_rng(42).integers(0, 256, 2 * 1024 * 64, dtype=np.uint8).tobytes()
+        )
         mock_socket_instance.recv.return_value = raw_data
 
         rtl = RTLSDRBase(

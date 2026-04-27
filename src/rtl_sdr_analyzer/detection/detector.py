@@ -5,7 +5,6 @@ Implements algorithms for detecting and characterizing RF signals.
 
 import logging
 from datetime import datetime
-from typing import Optional
 
 import numpy as np
 
@@ -42,10 +41,10 @@ class SignalDetector:
 
         # Detection state
         self.power_history: list[float] = []
-        self.baseline_mean: Optional[float] = None
-        self.baseline_std: Optional[float] = None
+        self.baseline_mean: float | None = None
+        self.baseline_std: float | None = None
         self.potential_signal = False
-        self.signal_start_time: Optional[float] = None
+        self.signal_start_time: float | None = None
 
         # Statistics
         self.stats = DetectionStats()
@@ -85,7 +84,7 @@ class SignalDetector:
         spectrum: np.ndarray,
         freq_range: np.ndarray,
         timestamp: float,
-    ) -> Optional[JammingEvent]:
+    ) -> JammingEvent | None:
         """Detect potential signals in the spectrum.
 
         Args:
@@ -106,9 +105,7 @@ class SignalDetector:
         current_mean = float(np.mean(spectrum))
         baseline_mean = self.baseline_mean if self.baseline_mean is not None else 0.0
         baseline_std = self.baseline_std if self.baseline_std is not None else 1.0
-        z_score = (current_mean - baseline_mean) / (
-            baseline_std + Z_SCORE_EPSILON
-        )
+        z_score = (current_mean - baseline_mean) / (baseline_std + Z_SCORE_EPSILON)
 
         # Bandwidth estimation
         mask = spectrum > (max_power - BANDWIDTH_DB_THRESHOLD)
@@ -122,9 +119,7 @@ class SignalDetector:
             abs(z_score) > self.z_score_threshold,
         ]
 
-        is_signal = (
-            all(detection_criteria) if not self.test_mode else any(detection_criteria)
-        )
+        is_signal = all(detection_criteria) if not self.test_mode else any(detection_criteria)
 
         self.stats.update(max_power, is_signal)
 
@@ -134,7 +129,9 @@ class SignalDetector:
             logger.info("Potential signal detected: power=%.2f dB", max_power)
 
         elif is_signal and self.potential_signal:
-            signal_start = self.signal_start_time if self.signal_start_time is not None else timestamp
+            signal_start = (
+                self.signal_start_time if self.signal_start_time is not None else timestamp
+            )
             duration = timestamp - signal_start
             if duration >= self.min_duration:
                 event = JammingEvent(

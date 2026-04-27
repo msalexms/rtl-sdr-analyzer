@@ -3,7 +3,6 @@
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional, Union
 
 from rich.console import Console
 from rich.table import Table
@@ -25,7 +24,7 @@ class StatsDashboard:
         dashboard.show_hourly_activity()
     """
 
-    def __init__(self, db_path: Union[Path, str] = "rtl_sdr_analyzer.db"):
+    def __init__(self, db_path: Path | str = "rtl_sdr_analyzer.db"):
         self.store = EventStore(db_path)
 
     def show_summary(self) -> None:
@@ -129,7 +128,7 @@ class StatsDashboard:
             )
         console.print(table)
 
-    def export_csv(self, output_path: Path, since_hours: Optional[int] = None) -> int:
+    def export_csv(self, output_path: Path, since_hours: int | None = None) -> int:
         """Export events to CSV and return count."""
         since = None
         if since_hours:

@@ -3,7 +3,7 @@
 import logging
 import signal
 import time
-from typing import Any, Optional
+from typing import Any
 
 from rtl_sdr_analyzer.core.rtlsdr_base import RTLSDRBase
 from rtl_sdr_analyzer.core.signal_processor import SignalProcessor
@@ -39,7 +39,7 @@ class Analyzer:
         processor: SignalProcessor,
         detector: SignalDetector,
         visualization: VisualizationStrategy,
-        event_bus: Optional[EventBus] = None,
+        event_bus: EventBus | None = None,
         max_errors: int = 5,
     ):
         self.rtlsdr = rtlsdr

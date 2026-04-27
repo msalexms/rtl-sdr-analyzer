@@ -2,7 +2,7 @@
 
 import logging
 from collections import deque
-from typing import Any, Optional
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,7 +25,7 @@ class MatplotlibVisualization:
         self.freq_range = freq_range
         self.waterfall_length = waterfall_length
         self.update_interval = update_interval
-        self.animation: Optional[FuncAnimation] = None
+        self.animation: FuncAnimation | None = None
 
         # Waterfall data buffer
         self.waterfall_data = deque(
@@ -56,7 +56,7 @@ class MatplotlibVisualization:
                 spine.set_color("#444444")
 
         # Spectrum plot
-        self.line_spectrum, = self.ax_spectrum.plot([], [], "w-", lw=1)
+        (self.line_spectrum,) = self.ax_spectrum.plot([], [], "w-", lw=1)
         self.ax_spectrum.set_xlim(self.freq_range[0], self.freq_range[-1])
         self.ax_spectrum.set_ylim(-100, -30)
         self.ax_spectrum.set_ylabel("Power (dB)", color="white")
@@ -80,8 +80,8 @@ class MatplotlibVisualization:
 
     def update(
         self,
-        spectrum: Optional[np.ndarray],
-        event: Optional[JammingEvent] = None,
+        spectrum: np.ndarray | None,
+        event: JammingEvent | None = None,
     ) -> list[Any]:
         """Update the plot with new spectrum data."""
         if spectrum is None:

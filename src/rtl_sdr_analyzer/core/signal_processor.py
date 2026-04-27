@@ -5,7 +5,6 @@ and power calculations with proper error handling.
 """
 
 import logging
-from typing import Optional
 
 import numpy as np
 from scipy.fft import fft, fftshift
@@ -55,7 +54,7 @@ class SignalProcessor:
         cutoff = cutoff_frac * nyquist
         return butter(order, cutoff / nyquist)  # type: ignore[no-any-return]
 
-    def process_samples(self, iq_data: Optional[np.ndarray]) -> Optional[np.ndarray]:
+    def process_samples(self, iq_data: np.ndarray | None) -> np.ndarray | None:
         """Process IQ samples into a power spectrum.
 
         Args:

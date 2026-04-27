@@ -1,7 +1,6 @@
 """Event data structures for signal detection and analysis."""
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -17,8 +16,8 @@ class JammingEvent(BaseModel):
     bandwidth: float
     duration: float
     confidence: float
-    snr: Optional[float] = Field(default=None, ge=0)
-    center_offset: Optional[float] = None
+    snr: float | None = Field(default=None, ge=0)
+    center_offset: float | None = None
 
 
 class DetectionStats(BaseModel):
