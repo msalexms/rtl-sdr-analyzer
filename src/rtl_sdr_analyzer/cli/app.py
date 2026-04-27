@@ -457,7 +457,7 @@ def config_show(
     if format.lower() == "json":
         typer.echo(settings.model_dump_json(indent=2))
     else:
-        import yaml  # type: ignore[import-untyped]
+        import yaml
 
         typer.echo(yaml.safe_dump(settings.model_dump(), sort_keys=False))
 
