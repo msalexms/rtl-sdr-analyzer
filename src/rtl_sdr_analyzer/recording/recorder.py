@@ -1,7 +1,6 @@
 """IQ sample recorder for offline analysis."""
 
 import logging
-import struct
 import time
 from pathlib import Path
 from typing import Optional

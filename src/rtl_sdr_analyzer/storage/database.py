@@ -1,11 +1,12 @@
 """SQLite storage for detection events and spectrum data."""
 
+import csv
 import logging
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Generator, Optional
+from typing import Generator, Optional, Union
 
 from rtl_sdr_analyzer.detection.events import JammingEvent
 
@@ -48,7 +49,7 @@ class EventStore:
         store.insert_event(event)
     """
 
-    def __init__(self, db_path: Path | str = "rtl_sdr_analyzer.db"):
+    def __init__(self, db_path: Union[Path, str] = "rtl_sdr_analyzer.db"):
         self.db_path = Path(db_path)
         self._session_id: Optional[int] = None
 
@@ -185,8 +186,6 @@ class EventStore:
 
     def export_to_csv(self, output_path: Path, since: Optional[str] = None) -> int:
         """Export events to CSV and return row count."""
-        import csv
-
         with self._connect() as conn:
             if since:
                 rows = conn.execute(
