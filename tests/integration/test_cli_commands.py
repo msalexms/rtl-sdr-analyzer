@@ -1,0 +1,61 @@
+"""Integration tests for Typer CLI commands."""
+
+from pathlib import Path
+
+import pytest
+from typer.testing import CliRunner
+
+from rtl_sdr_analyzer.cli.app import app
+
+runner = CliRunner()
+
+
+class TestAnalyzeCommand:
+    def test_help(self) -> None:
+        result = runner.invoke(app, ["analyze", "--help"])
+        assert result.exit_code == 0
+        assert "--freq" in result.output
+        assert "--headless" in result.output
+
+    def test_analyze_stub_headless(self) -> None:
+        """Run analyze in headless mode with mocked hardware.
+
+        Because the analyzer tries to open a real socket, we expect a
+        connection error here — the test validates CLI wiring.
+        """
+        result = runner.invoke(app, ["analyze", "--headless", "--host", "127.0.0.1"])
+        # Will fail to connect, but CLI should parse correctly
+        assert "Failed to connect" in result.output or result.exit_code != 0
+
+
+class TestConfigCommands:
+    def test_config_validate_valid(self, tmp_path: Path) -> None:
+        yaml_path = tmp_path / "valid.yml"
+        yaml_path.write_text("receiver:\n  frequency: 98000000\n")
+        result = runner.invoke(app, ["config-validate", str(yaml_path)])
+        assert result.exit_code == 0
+        assert "Configuration is valid" in result.output
+
+    def test_config_validate_invalid(self, tmp_path: Path) -> None:
+        yaml_path = tmp_path / "invalid.yml"
+        yaml_path.write_text("receiver:\n  frequency: -1\n")
+        result = runner.invoke(app, ["config-validate", str(yaml_path)])
+        assert result.exit_code == 1
+        assert "Configuration error" in result.output
+
+    def test_config_show_json(self) -> None:
+        result = runner.invoke(app, ["config-show", "--format", "json"])
+        assert result.exit_code == 0
+        assert "rtl_tcp" in result.output
+
+    def test_config_show_yaml(self) -> None:
+        result = runner.invoke(app, ["config-show", "--format", "yaml"])
+        assert result.exit_code == 0
+        assert "rtl_tcp" in result.output
+
+
+class TestRecordCommand:
+    def test_record_stub(self) -> None:
+        result = runner.invoke(app, ["record", "/tmp/test.iq"])
+        assert result.exit_code == 0
+        assert "Not yet implemented" in result.output

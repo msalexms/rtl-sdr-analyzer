@@ -1,0 +1,88 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rtl-sdr-analyzer"
+version = "2.0.0"
+description = "Real-time spectrum analyzer and signal detection tool leveraging RTL-SDR hardware"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "Alejandro Martín", email = "msalexms@example.com"}
+]
+keywords = ["rtl-sdr", "spectrum-analyzer", "rf", "jamming-detector", "dsp"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "numpy>=2.0,<3.0",
+    "scipy>=1.15,<2.0",
+    "matplotlib>=3.10,<4.0",
+    "pyyaml>=6.0,<7.0",
+    "typer>=0.12,<1.0",
+    "pydantic>=2.0,<3.0",
+    "pydantic-settings>=2.0,<3.0",
+    "structlog>=24.0,<25.0",
+]
+
+[project.optional-dependencies]
+gui = [
+    "PyQt6>=6.0,<7.0",
+]
+dev = [
+    "ruff>=0.4,<1.0",
+    "mypy>=1.10,<2.0",
+]
+test = [
+    "pytest>=8.0,<9.0",
+    "pytest-asyncio>=0.23,<1.0",
+    "pytest-cov>=5.0,<6.0",
+    "pytest-mock>=3.14,<4.0",
+]
+
+[project.scripts]
+rtl-sdr-analyzer = "rtl_sdr_analyzer.cli.app:app"
+
+[project.urls]
+Homepage = "https://github.com/msalexms/rtl-sdr-analyzer"
+Repository = "https://github.com/msalexms/rtl-sdr-analyzer"
+Issues = "https://github.com/msalexms/rtl-sdr-analyzer/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+rtl_sdr_analyzer = ["py.typed"]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "--cov=rtl_sdr_analyzer --cov-report=term-missing --cov-fail-under=80"
+asyncio_mode = "auto"
