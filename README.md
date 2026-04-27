@@ -409,7 +409,7 @@ rtl-sdr-analyzer analyze --headless \
   --freq 446e6 \
   --host 127.0.0.1 \
   --export-format json \
-  --export-path walkie_events.jsonl \
+  --export-path walkie_events.json \
   --bandwidth-threshold 50000 \
   --min-duration 0.2
 ```
