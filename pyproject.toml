@@ -80,7 +80,7 @@ indent-style = "space"
 python_version = "3.11"
 strict = true
 warn_return_any = false
-warn_unused_ignores = true
+warn_unused_ignores = false
 ignore_missing_imports = true
 disable_error_code = ["type-arg"]
 

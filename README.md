@@ -2,7 +2,7 @@
 
 # 📡 RTL-SDR Signal Analyzer & Jamming Detector
 
-[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org)
+[![Python](https://img.shields.io/badge/Python-311+-blue.svg)](https://www.python.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![RTL-SDR](https://img.shields.io/badge/RTL--SDR-Compatible-orange.svg)](https://www.rtl-sdr.com)
 

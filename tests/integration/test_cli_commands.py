@@ -1,5 +1,6 @@
 """Integration tests for Typer CLI commands."""
 
+import re
 from pathlib import Path
 from unittest.mock import patch
 
@@ -10,12 +11,19 @@ from rtl_sdr_analyzer.cli.app import app
 runner = CliRunner()
 
 
+def _strip_ansi(text: str) -> str:
+    """Remove ANSI escape sequences from text."""
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    return ansi_escape.sub("", text)
+
+
 class TestAnalyzeCommand:
     def test_help(self) -> None:
         result = runner.invoke(app, ["analyze", "--help"])
         assert result.exit_code == 0
-        assert "--freq" in result.stdout
-        assert "--headless" in result.stdout
+        output = _strip_ansi(result.stdout)
+        assert "--freq" in output
+        assert "--headless" in output
 
     @patch("rtl_sdr_analyzer.cli.app.RTLSDRBase.connect")
     def test_analyze_stub_headless(self, mock_connect: object) -> None:
