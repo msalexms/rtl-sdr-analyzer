@@ -3,10 +3,11 @@
 import csv
 import logging
 import sqlite3
+from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Generator, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from rtl_sdr_analyzer.detection.events import JammingEvent
 
@@ -83,7 +84,10 @@ class EventStore:
                 "INSERT INTO sessions (center_freq_mhz, sample_rate_hz) VALUES (?, ?)",
                 (center_freq_mhz, sample_rate_hz),
             )
-            self._session_id = cursor.lastrowid
+            row_id = cursor.lastrowid
+            if row_id is None:
+                raise RuntimeError("Failed to create session")
+            self._session_id = row_id
         logger.info("Started session %d", self._session_id)
         return self._session_id
 
@@ -118,10 +122,13 @@ class EventStore:
                     event.snr,
                 ),
             )
-            logger.debug("Inserted event id=%d", cursor.lastrowid)
-            return cursor.lastrowid
+            row_id = cursor.lastrowid
+            if row_id is None:
+                raise RuntimeError("Failed to insert event")
+            logger.debug("Inserted event id=%d", row_id)
+            return row_id
 
-    def get_recent_events(self, limit: int = 100) -> list[dict]:
+    def get_recent_events(self, limit: int = 100) -> List[Dict[str, Any]]:
         """Get the most recent detection events."""
         with self._connect() as conn:
             rows = conn.execute(
@@ -142,7 +149,7 @@ class EventStore:
                 row = conn.execute("SELECT COUNT(*) FROM events").fetchone()
         return row[0] if row else 0
 
-    def get_top_frequencies(self, limit: int = 10) -> list[dict]:
+    def get_top_frequencies(self, limit: int = 10) -> List[Dict[str, Any]]:
         """Get frequencies with the most detections."""
         with self._connect() as conn:
             rows = conn.execute(
@@ -159,7 +166,7 @@ class EventStore:
             ).fetchall()
         return [dict(row) for row in rows]
 
-    def get_hourly_activity(self) -> list[dict]:
+    def get_hourly_activity(self) -> List[Dict[str, Any]]:
         """Get detection count per hour."""
         with self._connect() as conn:
             rows = conn.execute(
@@ -175,7 +182,7 @@ class EventStore:
             ).fetchall()
         return [dict(row) for row in rows]
 
-    def get_sessions(self, limit: int = 10) -> list[dict]:
+    def get_sessions(self, limit: int = 10) -> List[Dict[str, Any]]:
         """Get recent monitoring sessions."""
         with self._connect() as conn:
             rows = conn.execute(

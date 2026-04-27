@@ -35,9 +35,9 @@ def sample_spectrum() -> np.ndarray:
 @pytest.fixture
 def mock_rtlsdr() -> RTLSDRBase:
     """Return a mocked RTLSDRBase with sample data."""
-    with patch("rtl_sdr_analyzer.core.rtlsdr_base.socket.socket") as MockSocket:
+    with patch("rtl_sdr_analyzer.core.rtlsdr_base.socket.socket") as mock_socket_cls:
         mock_socket_instance = MagicMock()
-        MockSocket.return_value = mock_socket_instance
+        mock_socket_cls.return_value = mock_socket_instance
         rtl = RTLSDRBase(
             host="localhost",
             port=1234,

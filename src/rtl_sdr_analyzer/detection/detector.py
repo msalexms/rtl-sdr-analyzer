@@ -77,7 +77,8 @@ class SignalDetector:
             alpha = BASELINE_EMA_ALPHA
             self.baseline_mean = (1 - alpha) * self.baseline_mean + alpha * current_mean
             new_std = float(np.std(self.power_history))
-            self.baseline_std = (1 - alpha) * self.baseline_std + alpha * new_std
+            if self.baseline_std is not None:
+                self.baseline_std = (1 - alpha) * self.baseline_std + alpha * new_std
 
     def detect_signal(
         self,
@@ -103,8 +104,10 @@ class SignalDetector:
         # Calculate metrics
         max_power = float(np.max(spectrum))
         current_mean = float(np.mean(spectrum))
-        z_score = (current_mean - self.baseline_mean) / (
-            self.baseline_std + Z_SCORE_EPSILON
+        baseline_mean = self.baseline_mean if self.baseline_mean is not None else 0.0
+        baseline_std = self.baseline_std if self.baseline_std is not None else 1.0
+        z_score = (current_mean - baseline_mean) / (
+            baseline_std + Z_SCORE_EPSILON
         )
 
         # Bandwidth estimation
@@ -131,7 +134,8 @@ class SignalDetector:
             logger.info("Potential signal detected: power=%.2f dB", max_power)
 
         elif is_signal and self.potential_signal:
-            duration = timestamp - self.signal_start_time
+            signal_start = self.signal_start_time if self.signal_start_time is not None else timestamp
+            duration = timestamp - signal_start
             if duration >= self.min_duration:
                 event = JammingEvent(
                     timestamp=datetime.fromtimestamp(timestamp),

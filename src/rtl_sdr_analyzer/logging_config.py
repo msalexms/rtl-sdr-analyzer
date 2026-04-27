@@ -5,6 +5,8 @@ import logging.config
 
 import structlog
 
+import structlog.stdlib
+
 
 DEFAULT_SHARED_PROCESSORS: list[structlog.types.Processor] = [
     structlog.contextvars.merge_contextvars,
@@ -48,11 +50,7 @@ def setup_logging(
         cache_logger_on_first_use=True,
     )
 
-    formatter: str
-    if json_format:
-        formatter = "json"
-    else:
-        formatter = "console"
+    formatter: str = "json" if json_format else "console"
 
     logging.config.dictConfig(
         {

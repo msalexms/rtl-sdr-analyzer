@@ -11,19 +11,19 @@ from rtl_sdr_analyzer.core.rtlsdr_base import RTLSDRBase, RTLSDRException
 
 class TestConnection:
     @patch("rtl_sdr_analyzer.core.rtlsdr_base.socket.socket")
-    def test_connect_success(self, MockSocket: MagicMock) -> None:
+    def test_connect_success(self, mock_socket_cls: MagicMock) -> None:
         mock_socket_instance = MagicMock()
-        MockSocket.return_value = mock_socket_instance
+        mock_socket_cls.return_value = mock_socket_instance
 
         rtl = RTLSDRBase(host="localhost", port=1234, center_freq=100e6)
         rtl.connect()
 
-        MockSocket.assert_called_with(socket.AF_INET, socket.SOCK_STREAM)
+        mock_socket_cls.assert_called_with(socket.AF_INET, socket.SOCK_STREAM)
         mock_socket_instance.connect.assert_called_with(("localhost", 1234))
 
     @patch("rtl_sdr_analyzer.core.rtlsdr_base.socket.socket")
-    def test_connect_failure(self, MockSocket: MagicMock) -> None:
-        MockSocket.side_effect = socket.error("Connection failed")
+    def test_connect_failure(self, mock_socket_cls: MagicMock) -> None:
+        mock_socket_cls.side_effect = OSError("Connection failed")
 
         rtl = RTLSDRBase(host="localhost", port=1234, center_freq=100e6)
         with pytest.raises(RTLSDRException):
@@ -32,9 +32,9 @@ class TestConnection:
 
 class TestReadSamples:
     @patch("rtl_sdr_analyzer.core.rtlsdr_base.socket.socket")
-    def test_read_samples_success(self, MockSocket: MagicMock) -> None:
+    def test_read_samples_success(self, mock_socket_cls: MagicMock) -> None:
         mock_socket_instance = MagicMock()
-        MockSocket.return_value = mock_socket_instance
+        mock_socket_cls.return_value = mock_socket_instance
 
         raw_data = np.random.default_rng(42).integers(
             0, 256, 2 * 1024 * 64, dtype=np.uint8
@@ -54,9 +54,9 @@ class TestReadSamples:
         assert samples.shape[0] == 1024
 
     @patch("rtl_sdr_analyzer.core.rtlsdr_base.socket.socket")
-    def test_read_samples_no_data(self, MockSocket: MagicMock) -> None:
+    def test_read_samples_no_data(self, mock_socket_cls: MagicMock) -> None:
         mock_socket_instance = MagicMock()
-        MockSocket.return_value = mock_socket_instance
+        mock_socket_cls.return_value = mock_socket_instance
         mock_socket_instance.recv.return_value = b""
 
         rtl = RTLSDRBase(
@@ -73,10 +73,10 @@ class TestReadSamples:
 
 class TestCommands:
     @patch("rtl_sdr_analyzer.core.rtlsdr_base.socket.socket")
-    def test_send_command_failure(self, MockSocket: MagicMock) -> None:
+    def test_send_command_failure(self, mock_socket_cls: MagicMock) -> None:
         mock_socket_instance = MagicMock()
-        MockSocket.return_value = mock_socket_instance
-        mock_socket_instance.send.side_effect = socket.error("Send failed")
+        mock_socket_cls.return_value = mock_socket_instance
+        mock_socket_instance.send.side_effect = OSError("Send failed")
 
         rtl = RTLSDRBase(
             host="localhost",
@@ -92,9 +92,9 @@ class TestCommands:
 
 class TestCleanup:
     @patch("rtl_sdr_analyzer.core.rtlsdr_base.socket.socket")
-    def test_cleanup(self, MockSocket: MagicMock) -> None:
+    def test_cleanup(self, mock_socket_cls: MagicMock) -> None:
         mock_socket_instance = MagicMock()
-        MockSocket.return_value = mock_socket_instance
+        mock_socket_cls.return_value = mock_socket_instance
 
         rtl = RTLSDRBase(host="localhost", port=1234, center_freq=100e6)
         rtl.sock = mock_socket_instance
@@ -104,9 +104,9 @@ class TestCleanup:
         assert rtl.sock is None
 
     @patch("rtl_sdr_analyzer.core.rtlsdr_base.socket.socket")
-    def test_context_manager(self, MockSocket: MagicMock) -> None:
+    def test_context_manager(self, mock_socket_cls: MagicMock) -> None:
         mock_socket_instance = MagicMock()
-        MockSocket.return_value = mock_socket_instance
+        mock_socket_cls.return_value = mock_socket_instance
 
         rtl = RTLSDRBase(host="localhost", port=1234, center_freq=100e6)
         with rtl as ctx:

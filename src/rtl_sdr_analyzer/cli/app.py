@@ -133,7 +133,7 @@ def analyze(
                 "No graphical display detected — falling back to headless mode. "
                 "Install a GUI backend (e.g. PyQt6) or use --headless to suppress this warning."
             )
-        visualization = HeadlessVisualization(
+        visualization: Any = HeadlessVisualization(
             freq_range=rtlsdr.freq_range,
             waterfall_length=settings.display.waterfall_length,
             update_interval=settings.display.update_interval,
@@ -156,6 +156,7 @@ def analyze(
         raise typer.Exit(1)
 
     # Setup file exporters
+    exporter: Optional[Any] = None
     if export_format and export_path:
         if export_format.lower() == "csv":
             exporter = CsvExporter(output_path=export_path)
@@ -191,7 +192,7 @@ def analyze(
         event_bus=event_bus,
     )
 
-    if export_format and export_path:
+    if exporter is not None:
         analyzer.add_exporter(exporter)
 
     try:
@@ -299,6 +300,7 @@ def sweep(
     event_bus = EventBus()
 
     # Setup exporters
+    exporter: Optional[Any] = None
     if export_format and export_path:
         if export_format.lower() == "csv":
             exporter = CsvExporter(output_path=export_path)

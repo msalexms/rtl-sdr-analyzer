@@ -10,7 +10,7 @@ import socket
 import struct
 from enum import IntEnum
 from types import TracebackType
-from typing import Optional, Type
+from typing import Optional
 
 import numpy as np
 from scipy.signal.windows import blackmanharris
@@ -83,7 +83,7 @@ class RTLSDRBase:
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
+        exc_type: Optional[type[BaseException]],
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> None:
@@ -109,7 +109,7 @@ class RTLSDRBase:
 
             self._configure_device()
             logger.info("Successfully connected to RTL-TCP server")
-        except socket.error as exc:
+        except OSError as exc:
             self._cleanup()
             raise RTLSDRException(f"Failed to connect to RTL-TCP server: {exc}") from exc
 
@@ -148,7 +148,7 @@ class RTLSDRBase:
 
         try:
             self.sock.send(struct.pack(">BI", command, value))
-        except socket.error as exc:
+        except OSError as exc:
             raise RTLSDRException(f"Failed to send command: {exc}") from exc
 
     # ------------------------------------------------------------------
@@ -186,7 +186,7 @@ class RTLSDRBase:
                 return iq[: self.fft_size]
             return None
 
-        except socket.error as exc:
+        except OSError as exc:
             if exc.errno not in (errno.EWOULDBLOCK, errno.EAGAIN):
                 logger.warning("Error reading samples: %s", exc)
             return None

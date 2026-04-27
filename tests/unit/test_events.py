@@ -61,7 +61,7 @@ class TestJammingEvent:
             duration=0.5,
             confidence=1.0,
         )
-        with pytest.raises(Exception):
+        with pytest.raises(AttributeError):
             event.power = -40.0
 
 

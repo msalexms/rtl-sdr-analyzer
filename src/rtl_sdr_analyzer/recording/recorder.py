@@ -3,7 +3,7 @@
 import logging
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Any, BinaryIO, List, Optional
 
 import numpy as np
 
@@ -34,7 +34,7 @@ class IQRecorder:
         self.output_path = Path(output_path)
         self.format = format.lower()
         self.sample_rate = sample_rate
-        self._file: Optional[object] = None
+        self._file: Optional[BinaryIO] = None
         self._samples: list[np.ndarray] = []
         self._total_bytes = 0
 
@@ -44,10 +44,16 @@ class IQRecorder:
             logger.info("Opened raw IQ file: %s", self.output_path)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        if self.format == "raw" and self._file is not None:
-            self._file.close()
-            logger.info("Closed raw IQ file (%d bytes written)", self._total_bytes)
+    def __exit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[Any],
+    ) -> None:
+        if self.format == "raw":
+            if self._file is not None:
+                self._file.close()
+                logger.info("Closed raw IQ file (%d bytes written)", self._total_bytes)
         elif self.format == "numpy":
             self._save_numpy()
 
@@ -109,7 +115,8 @@ class IQRecorder:
         interleaved[0::2] = real
         interleaved[1::2] = imag
 
-        self._file.write(interleaved.tobytes())
+        if self._file is not None:
+            self._file.write(interleaved.tobytes())
         self._total_bytes += len(interleaved)
 
     def _save_numpy(self) -> None:

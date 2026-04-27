@@ -1,6 +1,5 @@
 """Tests for Pydantic configuration models."""
 
-import os
 from pathlib import Path
 
 import pytest

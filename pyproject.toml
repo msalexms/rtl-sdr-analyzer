@@ -25,9 +25,9 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-    "numpy>=2.0,<3.0",
-    "scipy>=1.15,<2.0",
-    "matplotlib>=3.10,<4.0",
+    "numpy>=1.24,<2.0",
+    "scipy>=1.10,<1.15",
+    "matplotlib>=3.7,<4.0",
     "pyyaml>=6.0,<7.0",
     "typer>=0.12,<1.0",
     "pydantic>=2.0,<3.0",
@@ -43,6 +43,7 @@ gui = [
 dev = [
     "ruff>=0.4,<1.0",
     "mypy>=1.10,<2.0",
+    "types-PyYAML>=6.0,<7.0",
 ]
 test = [
     "pytest>=8.0,<9.0",
@@ -69,7 +70,7 @@ rtl_sdr_analyzer = ["py.typed"]
 target-version = "py39"
 line-length = 100
 select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
-ignore = ["E501"]
+ignore = ["E501", "B008", "B904", "SIM115", "N818"]
 
 [tool.ruff.format]
 quote-style = "double"

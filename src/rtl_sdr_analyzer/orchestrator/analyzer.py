@@ -3,7 +3,7 @@
 import logging
 import signal
 import time
-from typing import Optional
+from typing import Any, List, Optional
 
 from rtl_sdr_analyzer.core.rtlsdr_base import RTLSDRBase
 from rtl_sdr_analyzer.core.signal_processor import SignalProcessor
@@ -50,7 +50,7 @@ class Analyzer:
         self.max_errors = max_errors
         self._running = False
         self._error_count = 0
-        self._exporters: list[Exporter] = []
+        self._exporters: list[Any] = []
 
     def add_exporter(self, exporter: Exporter) -> None:
         """Register an exporter to be closed on shutdown."""
@@ -110,7 +110,7 @@ class Analyzer:
     # Update loop
     # ------------------------------------------------------------------
 
-    def _update(self, _frame: int) -> list:
+    def _update(self, _frame: int) -> list[Any]:
         """Single iteration of the acquisition → process → detect → visualize pipeline."""
         if not self._running:
             return self.visualization.get_artists()

@@ -5,7 +5,7 @@ and power calculations with proper error handling.
 """
 
 import logging
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 from scipy.fft import fft, fftshift
@@ -41,7 +41,7 @@ class SignalProcessor:
         self,
         order: int,
         cutoff_frac: float,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Create Butterworth filter coefficients.
 
         Args:
@@ -95,7 +95,7 @@ class SignalProcessor:
         self,
         spectrum: np.ndarray,
         freq_range: np.ndarray,
-    ) -> dict[str, float]:
+    ) -> Dict[str, float]:
         """Calculate various signal metrics from the spectrum.
 
         Args:
@@ -133,7 +133,7 @@ class SignalProcessor:
             Bandwidth in Hz.
         """
         try:
-            max_power = np.max(spectrum)
+            max_power: float = float(np.max(spectrum))
             mask = spectrum > (max_power - BANDWIDTH_DB_THRESHOLD)
             bin_width_mhz = float(freq_range[1] - freq_range[0])
             return float(np.sum(mask) * bin_width_mhz * 1e6)

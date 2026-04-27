@@ -2,7 +2,7 @@
 
 import logging
 from collections import deque
-from typing import Optional
+from typing import Any, Callable, List, Optional
 
 import numpy as np
 
@@ -33,13 +33,13 @@ class HeadlessVisualization:
         self._running = False
 
         # Maintain a small history for basic stats
-        self.power_history = deque(maxlen=waterfall_length)
+        self.power_history: deque[float] = deque(maxlen=waterfall_length)
 
     def update(
         self,
         spectrum: Optional[np.ndarray],
         event: Optional[JammingEvent] = None,
-    ) -> list:
+    ) -> list[Any]:
         """Log spectrum statistics instead of rendering."""
         if spectrum is None:
             return []
@@ -71,7 +71,7 @@ class HeadlessVisualization:
 
         return []
 
-    def start(self, update_func) -> None:
+    def start(self, update_func: Callable[[int], list[Any]]) -> None:
         """Run the update loop without matplotlib.
 
         Relies on the outer signal handler (registered by Analyzer) to set
@@ -88,6 +88,6 @@ class HeadlessVisualization:
         """Signal the loop to exit."""
         self._running = False
 
-    def get_artists(self) -> list:
+    def get_artists(self) -> list[Any]:
         """No artists in headless mode."""
         return []

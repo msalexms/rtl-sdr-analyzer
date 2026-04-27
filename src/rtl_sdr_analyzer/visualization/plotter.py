@@ -2,7 +2,7 @@
 
 import logging
 from collections import deque
-from typing import Optional
+from typing import Any, List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -34,7 +34,7 @@ class MatplotlibVisualization:
         )
 
         self._setup_plot()
-        self.event_markers: list = []
+        self.event_markers: list[Any] = []
 
     def _setup_plot(self) -> None:
         """Set up the matplotlib figure and axes."""
@@ -82,7 +82,7 @@ class MatplotlibVisualization:
         self,
         spectrum: Optional[np.ndarray],
         event: Optional[JammingEvent] = None,
-    ) -> list:
+    ) -> list[Any]:
         """Update the plot with new spectrum data."""
         if spectrum is None:
             return self.get_artists()
@@ -116,7 +116,7 @@ class MatplotlibVisualization:
         )
         self.event_markers.append(marker)
 
-    def start(self, update_func) -> None:
+    def start(self, update_func: Any) -> None:
         """Start the real-time animation."""
         self.animation = FuncAnimation(
             self.fig,
@@ -132,6 +132,6 @@ class MatplotlibVisualization:
         if self.animation is not None:
             self.animation.event_source.stop()
 
-    def get_artists(self) -> list:
+    def get_artists(self) -> list[Any]:
         """Return all plot artists."""
         return [self.line_spectrum, self.waterfall_img] + self.event_markers

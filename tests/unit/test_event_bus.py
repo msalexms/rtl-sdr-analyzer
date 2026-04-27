@@ -2,8 +2,6 @@
 
 from datetime import datetime
 
-import pytest
-
 from rtl_sdr_analyzer.detection.events import JammingEvent
 from rtl_sdr_analyzer.orchestrator.event_bus import EventBus
 

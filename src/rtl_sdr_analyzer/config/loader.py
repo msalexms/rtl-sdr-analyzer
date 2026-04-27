@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, Optional, Union
 
 import yaml
 
@@ -10,8 +10,8 @@ from .models import Settings
 
 
 def load_settings(
-    config_path: Path | str | None = None,
-    cli_overrides: dict[str, Any] | None = None,
+    config_path: Union[Path, str, None] = None,
+    cli_overrides: Optional[Dict[str, Any]] = None,
 ) -> Settings:
     """Load and merge configuration sources.
 
@@ -34,7 +34,7 @@ def load_settings(
     if config_path:
         path = Path(config_path)
         if path.exists():
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 loaded = yaml.safe_load(f)
                 if isinstance(loaded, dict):
                     yaml_data = loaded
