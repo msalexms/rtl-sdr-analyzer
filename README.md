@@ -35,6 +35,11 @@ Instead of drowning you in dozens of obscure demodulator panels or brittle matpl
 - **Simulated Demo RF** when no dongle is connected, so you can explore the spectrum and test detections anywhere
 - **Recorded IQ replay** (`.raw` / `.cu8` and `.npz`)
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/msalexms/rtl-sdr-analyzer/main/docs/screenshots/web-studio-live.png" alt="Web Studio: live spectrum and waterfall receiving FM broadcast at 98 MHz" width="920">
+</p>
+<p align="center"><sub>Web Studio receiving FM broadcast at 98 MHz with a Nooelec NESDR SMArt v5 — live spectrum + waterfall.</sub></p>
+
 ---
 
 ## Features

@@ -35,6 +35,11 @@ Sin decenas de paneles complicados ni ventanas de matplotlib inestables: incluye
 - **Demo RF simulada** cuando no hay receptor conectado, para probar todo en cualquier equipo
 - **Reproducción de ficheros IQ** (`.raw` / `.cu8` y `.npz`)
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/msalexms/rtl-sdr-analyzer/main/docs/screenshots/web-studio-live-es.png" alt="Estudio Web: espectro y cascada en directo recibiendo FM en 98 MHz" width="920">
+</p>
+<p align="center"><sub>Estudio Web recibiendo FM en 98 MHz con un Nooelec NESDR SMArt v5 — espectro + cascada en directo.</sub></p>
+
 ---
 
 ## Características
