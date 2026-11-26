@@ -1,92 +1,98 @@
-"""Tests for SQLite storage and stats dashboard."""
+"""Unit tests for WAL SQLite EventStore, v2 migration, and StatsDashboard."""
 
-from datetime import datetime
+import sqlite3
+from datetime import UTC, datetime
 from pathlib import Path
 
-import pytest
-
-from rtl_sdr_analyzer.detection.events import JammingEvent
+from rtl_sdr_analyzer.detection.events import SignalEvent
 from rtl_sdr_analyzer.storage.database import EventStore
 from rtl_sdr_analyzer.storage.stats import StatsDashboard
 
 
-@pytest.fixture
-def temp_db(tmp_path: Path) -> EventStore:
-    db = EventStore(tmp_path / "test.db")
-    db.init_schema()
-    return db
+def _make_event(freq: float = 446.006, power: float = -32.0) -> SignalEvent:
+    return SignalEvent(
+        timestamp=datetime.now(UTC),
+        frequency=freq,
+        power=power,
+        bandwidth=12_500.0,
+        duration=0.5,
+        confidence=2.0,
+        snr=42.0,
+        center_offset=6_000.0,
+        noise_floor=-74.0,
+    )
 
 
 class TestEventStore:
-    def test_insert_and_retrieve(self, temp_db: EventStore) -> None:
-        event = JammingEvent(
-            timestamp=datetime(2024, 1, 1, 12, 0, 0),
-            frequency=446.0,
-            power=-30.0,
-            bandwidth=12500.0,
-            duration=1.5,
-            confidence=2.5,
-            snr=45.0,
-        )
-        row_id = temp_db.insert_event(event)
-        assert row_id == 1
+    def test_session_and_event_lifecycle(self, tmp_path: Path) -> None:
+        store = EventStore(tmp_path / "sub" / "events.db")
+        store.init_schema()
 
-        events = temp_db.get_recent_events(limit=10)
-        assert len(events) == 1
-        assert events[0]["frequency_mhz"] == 446.0
+        sid = store.start_session(center_freq_mhz=446.0, sample_rate_hz=2.048e6)
+        store.insert_event(_make_event(446.006, -30.0))
+        store.insert_event(_make_event(446.056, -40.0))
+        store.end_session()
 
-    def test_session_tracking(self, temp_db: EventStore) -> None:
-        session_id = temp_db.start_session(center_freq_mhz=446.0, sample_rate_hz=2.048e6)
-        assert session_id == 1
-
-        temp_db.end_session(total_events=5)
-        sessions = temp_db.get_sessions()
+        sessions = store.get_sessions()
         assert len(sessions) == 1
-        assert sessions[0]["total_events"] == 5
+        assert sessions[0]["id"] == sid
+        assert sessions[0]["total_events"] == 2
+        assert sessions[0]["end_time"] is not None
 
-    def test_top_frequencies(self, temp_db: EventStore) -> None:
-        for freq in [446.0, 446.0, 446.0, 100.0]:
-            temp_db.insert_event(
-                JammingEvent(
-                    timestamp=datetime.now(),
-                    frequency=freq,
-                    power=-30.0,
-                    bandwidth=1000.0,
-                    duration=1.0,
-                    confidence=2.0,
-                )
+        recent = store.get_recent_events(limit=10)
+        assert len(recent) == 2
+        assert recent[0]["session_id"] == sid
+
+    def test_migrates_legacy_v2_schema(self, tmp_path: Path) -> None:
+        db_path = tmp_path / "legacy.db"
+        conn = sqlite3.connect(db_path)
+        conn.execute(
+            """
+            CREATE TABLE events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                frequency_mhz REAL NOT NULL,
+                power_db REAL NOT NULL,
+                bandwidth_hz REAL NOT NULL,
+                duration_s REAL NOT NULL,
+                confidence REAL NOT NULL,
+                snr REAL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
-
-        top = temp_db.get_top_frequencies(limit=2)
-        assert len(top) == 2
-        assert top[0]["frequency_mhz"] == 446.0
-        assert top[0]["count"] == 3
-
-    def test_export_csv(self, temp_db: EventStore, tmp_path: Path) -> None:
-        temp_db.insert_event(
-            JammingEvent(
-                timestamp=datetime(2024, 1, 1, 12, 0, 0),
-                frequency=100.0,
-                power=-50.0,
-                bandwidth=1000.0,
-                duration=1.0,
-                confidence=2.0,
-            )
+            """
         )
+        conn.commit()
+        conn.close()
 
-        output = tmp_path / "export.csv"
-        count = temp_db.export_to_csv(output)
-        assert count == 1
-        assert output.exists()
-        assert "frequency_mhz" in output.read_text()
+        store = EventStore(db_path)
+        store.init_schema()
+        store.insert_event(_make_event())
+        assert store.get_event_count() == 1
+
+    def test_export_csv_and_jsonl(self, tmp_path: Path) -> None:
+        store = EventStore(tmp_path / "events.db")
+        store.init_schema()
+        store.insert_event(_make_event(98.5, -25.0))
+
+        csv_out = tmp_path / "out.csv"
+        jsonl_out = tmp_path / "out.jsonl"
+        assert store.export_to_csv(csv_out) == 1
+        assert store.export_to_jsonl(jsonl_out) == 1
+        assert "98.5" in csv_out.read_text(encoding="utf-8")
+        assert "98.5" in jsonl_out.read_text(encoding="utf-8")
 
 
 class TestStatsDashboard:
-    def test_show_summary(
-        self, temp_db: EventStore, tmp_path: Path, capsys: pytest.CaptureFixture
-    ) -> None:
-        dashboard = StatsDashboard(temp_db.db_path)
-        # Just verify it doesn't crash
-        dashboard.show_summary()
-        captured = capsys.readouterr()
-        assert "Statistics" in captured.out or captured.out == ""
+    def test_renders_without_error(self, tmp_path: Path) -> None:
+        store = EventStore(tmp_path / "stats.db")
+        store.init_schema()
+        store.start_session(98.0, 2.048e6)
+        store.insert_event(_make_event(98.5, -25.0))
+        store.end_session()
+
+        dash = StatsDashboard(store.db_path)
+        dash.show_summary()
+        dash.show_top_frequencies()
+        dash.show_hourly_activity()
+        dash.show_recent_events()
+        assert dash.export_csv(tmp_path / "dash.csv", since_hours=24) == 1

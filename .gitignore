@@ -204,3 +204,8 @@ spectrogram.png
 # Local notes
 TODO.md
 NOTES.md
+
+# Runtime data and IQ captures
+*.cu8
+data/
+recordings/

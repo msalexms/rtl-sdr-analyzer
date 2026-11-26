@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 264" width="920" height="264" role="img" aria-label="rtl-sdr-analyzer — An AMSTech project. Real-time RF spectrum analyzer, signal detector, and wideband sweeper.">
+  <title>rtl-sdr-analyzer · AMSTech</title>
+  <rect x="10" y="10" width="906" height="250" rx="8" fill="#1E1B2E"/>
+  <rect x="4" y="4" width="906" height="250" rx="8" fill="#FFF6E9"/>
+  <path d="M12 4H902A8 8 0 0 1 910 12V54H4V12A8 8 0 0 1 12 4Z" fill="#FFFFFF"/>
+  <line x1="4" y1="54" x2="910" y2="54" stroke="#1E1B2E" stroke-width="2.5"/>
+  <rect x="4" y="4" width="906" height="250" rx="8" fill="none" stroke="#1E1B2E" stroke-width="2.5"/>
+
+  <g transform="translate(22 14) scale(0.62)">
+    <path d="M10 4L21 14h6L38 4l5 14q1 2 1 6v12q0 8-8 8H12q-8 0-8-8V24q0-4 1-6z" fill="#2B36D9" stroke="#1E1B2E" stroke-width="2.6" stroke-linejoin="round"/>
+    <path d="M13 25l6 5-6 5M24 36h10" fill="none" stroke="#FFFFFF" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="62" y="36" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="20" letter-spacing="-0.3">
+    <tspan font-weight="800" fill="#1E1B2E">rtl-sdr-analyzer</tspan>
+    <tspan dx="8" font-weight="400" fill="#D5CAB5">|</tspan>
+    <tspan dx="8" font-weight="700" font-size="16" fill="#5A5670">amstech</tspan>
+  </text>
+
+  <rect x="720" y="15" width="110" height="28" rx="6" fill="#FFFFFF" stroke="#1E1B2E" stroke-width="2"/>
+  <circle cx="738" cy="29" r="4.5" fill="#6FD08C" stroke="#1E1B2E" stroke-width="1.6"/>
+  <text x="750" y="33.5" font-family="ui-monospace, 'Cascadia Code', Consolas, Menlo, monospace" font-size="11.5" font-weight="700" letter-spacing="0.6" fill="#1E1B2E">LIVE RF</text>
+  <rect x="840" y="15" width="52" height="28" rx="6" fill="#FFE27A" stroke="#1E1B2E" stroke-width="2"/>
+  <text x="866" y="33.5" text-anchor="middle" font-family="ui-monospace, 'Cascadia Code', Consolas, Menlo, monospace" font-size="11.5" font-weight="700" letter-spacing="0.6" fill="#1E1B2E">MIT</text>
+
+  <text x="28" y="86" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="11.5" font-weight="800" letter-spacing="1.4" fill="#2B36D9">AN AMSTECH PROJECT · OPEN SOURCE</text>
+  <text x="28" y="128" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="34" font-weight="800" letter-spacing="-0.8" fill="#1E1B2E">Your RF spectrum, clear and live.</text>
+  <text x="28" y="158" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15" font-weight="500" fill="#5A5670">Live FFT &amp; waterfall, signal detector &amp; wideband sweeper · USB, RTL-TCP &amp; Demo RF.</text>
+
+  <g transform="translate(778 68) rotate(-6 36 36) scale(1.34)">
+    <g transform="translate(3 3)" fill="#1E1B2E" stroke="#1E1B2E" stroke-width="11" stroke-linejoin="round">
+      <path d="M16 4l11 10h18L56 4l5 15v15H11V19z"/>
+      <rect x="5" y="23" width="62" height="42" rx="8"/>
+      <rect x="2" y="39" width="8" height="12" rx="4"/>
+      <rect x="62" y="39" width="8" height="12" rx="4"/>
+    </g>
+    <g fill="#FFFFFF" stroke="#FFFFFF" stroke-width="11" stroke-linejoin="round">
+      <path d="M16 4l11 10h18L56 4l5 15v15H11V19z"/>
+      <rect x="5" y="23" width="62" height="42" rx="8"/>
+      <rect x="2" y="39" width="8" height="12" rx="4"/>
+      <rect x="62" y="39" width="8" height="12" rx="4"/>
+    </g>
+    <path d="M16 4l11 10h18L56 4l5 15v13H11V19z" fill="#2B36D9" stroke="#1E1B2E" stroke-width="3.2" stroke-linejoin="round"/>
+    <circle cx="24" cy="18.5" r="2.5" fill="#FFFFFF"/>
+    <circle cx="48" cy="18.5" r="2.5" fill="#FFFFFF"/>
+    <rect x="5" y="23" width="62" height="42" rx="8" fill="#18181D" stroke="#1E1B2E" stroke-width="3.2"/>
+    <circle cx="14" cy="29.5" r="2" fill="#FF5C39"/>
+    <circle cx="20.5" cy="29.5" r="2" fill="#FFE27A"/>
+    <circle cx="27" cy="29.5" r="2" fill="#6FD08C"/>
+    <line x1="9" y1="34" x2="63" y2="34" stroke="#3A3A45" stroke-width="1.5"/>
+    <path d="M11 53 L17 52 L21 48 L24 52 L29 51 L33 49 L36 37 L39 49 L44 52 L48 44 L51 51 L56 52 L61 53" fill="none" stroke="#7CC4FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="36" cy="37" r="2.3" fill="#FFE27A" stroke="#18181D" stroke-width="1"/>
+    <rect x="11" y="57" width="12" height="3.2" rx="1" fill="#2B36D9"/>
+    <rect x="24" y="57" width="9" height="3.2" rx="1" fill="#6FD08C"/>
+    <rect x="34" y="57" width="5" height="3.2" rx="1" fill="#FF5C39"/>
+    <rect x="40" y="57" width="7" height="3.2" rx="1" fill="#7CC4FF"/>
+    <rect x="48" y="57" width="13" height="3.2" rx="1" fill="#2B36D9"/>
+    <rect x="2" y="39" width="8" height="12" rx="4" fill="#2B36D9" stroke="#1E1B2E" stroke-width="2.8"/>
+    <rect x="62" y="39" width="8" height="12" rx="4" fill="#2B36D9" stroke="#1E1B2E" stroke-width="2.8"/>
+  </g>
+
+  <rect x="24" y="186" width="866" height="54" rx="6" fill="#FFFFFF" stroke="#1E1B2E" stroke-width="2"/>
+  <line x1="240.5" y1="187" x2="240.5" y2="239" stroke="#E9DFCB" stroke-width="1.5"/>
+  <line x1="457" y1="187" x2="457" y2="239" stroke="#E9DFCB" stroke-width="1.5"/>
+  <line x1="673.5" y1="187" x2="673.5" y2="239" stroke="#E9DFCB" stroke-width="1.5"/>
+
+  <text x="40" y="205" font-family="ui-monospace, 'Cascadia Code', Consolas, Menlo, monospace" font-size="10.5" font-weight="700" letter-spacing="0.9" fill="#5A5670">INPUT</text>
+  <text x="40" y="227" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15" font-weight="800" fill="#1E1B2E">USB · RTL-TCP · Demo</text>
+
+  <text x="257" y="205" font-family="ui-monospace, 'Cascadia Code', Consolas, Menlo, monospace" font-size="10.5" font-weight="700" letter-spacing="0.9" fill="#5A5670">DSP</text>
+  <text x="257" y="227" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15" font-weight="800" fill="#1E1B2E">Calibrated dBFS FFT</text>
+
+  <text x="473" y="205" font-family="ui-monospace, 'Cascadia Code', Consolas, Menlo, monospace" font-size="10.5" font-weight="700" letter-spacing="0.9" fill="#5A5670">INTERFACE</text>
+  <text x="473" y="227" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15" font-weight="800" fill="#1E1B2E">Web Studio · Rich CLI</text>
+
+  <text x="690" y="205" font-family="ui-monospace, 'Cascadia Code', Consolas, Menlo, monospace" font-size="10.5" font-weight="700" letter-spacing="0.9" fill="#5A5670">PLATFORMS</text>
+  <text x="690" y="227" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15" font-weight="800" fill="#1E1B2E">Linux · macOS · Windows</text>
+</svg>

@@ -1,16 +1,31 @@
 services:
-  rtl-sdr:
-    image: alpine:latest
-    container_name: rtl-tcp
+  rtl-sdr-analyzer:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: rtl-sdr-analyzer
     restart: unless-stopped
-    network_mode: "host"
+    ports:
+      - "8080:8080"
     devices:
       - "/dev/bus/usb:/dev/bus/usb"
     volumes:
-      - ./rtl_sdr_setup:/setup
+      - ../data:/data
+      - ../recordings:/recordings
+    environment:
+      - RTL_SDR__SOURCE__MODE=auto
+      - RTL_SDR__RECEIVER__FREQUENCY=98000000
+      - RTL_SDR__STORAGE__DB_PATH=/data/events.db
+      - RTL_SDR__STORAGE__RECORDINGS_DIR=/recordings
+
+  rtl-tcp:
+    image: alpine:latest
+    container_name: rtl-tcp
+    profiles: ["rtl-tcp"]
+    restart: unless-stopped
+    ports:
+      - "1234:1234"
+    devices:
+      - "/dev/bus/usb:/dev/bus/usb"
     entrypoint: >
-      sh -c "
-      apk add --no-cache rtl-sdr bash &&
-      echo 'blacklist dvb_usb_rtl28xxu' > /etc/modprobe.d/blacklist-dvb.conf &&
-      rtl_tcp -a 0.0.0.0 -b 40
-      "
+      sh -c "apk add --no-cache rtl-sdr && rtl_tcp -a 0.0.0.0 -p 1234"

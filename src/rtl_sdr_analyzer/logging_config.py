@@ -17,29 +17,18 @@ DEFAULT_SHARED_PROCESSORS: list[structlog.types.Processor] = [
 def setup_logging(
     level: str = "INFO",
     json_format: bool = False,
+    *,
+    force: bool = False,
 ) -> None:
-    """Configure logging once at application startup.
-
-    Must be called **exactly once** before any module creates loggers.
-    Modules should only use ``logging.getLogger(__name__)`` — never
-    ``logging.basicConfig()``.
-
-    Args:
-        level: Root log level (DEBUG, INFO, WARNING, ERROR).
-        json_format: Emit JSON logs instead of plain text.
-    """
-    # Prevent duplicate configuration
-    if logging.root.handlers:
+    """Configure structured logging once at application startup."""
+    if logging.root.handlers and not force:
         return
 
-    timestamper = structlog.processors.TimeStamper(fmt="iso")
+    normalized_level = level.upper()
 
     structlog.configure(
         processors=[
-            structlog.contextvars.merge_contextvars,
-            structlog.processors.add_log_level,
-            timestamper,
-            structlog.stdlib.ExtraAdder(),
+            *DEFAULT_SHARED_PROCESSORS,
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ],
         wrapper_class=structlog.stdlib.BoundLogger,
@@ -70,19 +59,25 @@ def setup_logging(
                 "default": {
                     "class": "logging.StreamHandler",
                     "formatter": formatter,
-                    "level": level,
+                    "level": normalized_level,
                 },
             },
             "loggers": {
                 "rtl_sdr_analyzer": {
                     "handlers": ["default"],
-                    "level": level,
+                    "level": normalized_level,
                     "propagate": False,
+                },
+                "uvicorn.error": {
+                    "level": normalized_level,
+                },
+                "uvicorn.access": {
+                    "level": "WARNING",
                 },
             },
             "root": {
                 "handlers": ["default"],
-                "level": level,
+                "level": normalized_level,
             },
         }
     )

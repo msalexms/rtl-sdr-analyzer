@@ -1,10 +1,12 @@
-"""Statistics dashboard for detection events."""
+"""AMSTech-themed console statistics dashboard for detection events."""
 
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+from rich import box
 from rich.console import Console
+from rich.panel import Panel
 from rich.table import Table
 
 from rtl_sdr_analyzer.storage.database import EventStore
@@ -12,128 +14,152 @@ from rtl_sdr_analyzer.storage.database import EventStore
 logger = logging.getLogger(__name__)
 console = Console()
 
+# AMSTech noche palette for terminal readability without imposing a background
+AMS_BRAND = "#7F89E8"
+AMS_THOR = "#9EA6F2"
+AMS_TEXT = "#E9E6E0"
+AMS_MUTED = "#9E9AA8"
+AMS_LINE = "#4A4A57"
+AMS_YELLOW = "#D9C26A"
+AMS_OK = "#8FD3A4"
+AMS_BAD = "#F0A094"
+
 
 class StatsDashboard:
-    """Console-based statistics dashboard for RTL-SDR events.
+    """Rich terminal statistics dashboard styled with AMSTech tokens."""
 
-    Example::
-
-        dashboard = StatsDashboard("events.db")
-        dashboard.show_summary()
-        dashboard.show_top_frequencies()
-        dashboard.show_hourly_activity()
-    """
-
-    def __init__(self, db_path: Path | str = "rtl_sdr_analyzer.db"):
+    def __init__(self, db_path: Path | str = "rtl_sdr_analyzer.db") -> None:
         self.store = EventStore(db_path)
 
     def show_summary(self) -> None:
-        """Display a high-level summary of all activity."""
+        """Display high-level event and session summary."""
         total_events = self.store.get_event_count()
-        recent_events = self.store.get_event_count(
-            since=(datetime.now() - timedelta(hours=24)).isoformat()
-        )
+        since_24h = (datetime.now(UTC) - timedelta(hours=24)).isoformat()
+        recent_events = self.store.get_event_count(since=since_24h)
         sessions = self.store.get_sessions(limit=5)
 
         console.print()
-        console.print("[bold cyan]📊 RTL-SDR Analyzer Statistics[/bold cyan]")
-        console.print("=" * 50)
-        console.print(f"Total detection events: [bold]{total_events}[/bold]")
-        console.print(f"Events in last 24h: [bold green]{recent_events}[/bold green]")
-        console.print(f"Recent sessions: [bold]{len(sessions)}[/bold]")
+        console.print(
+            Panel.fit(
+                f"[{AMS_TEXT}]Total events:[/{AMS_TEXT}] [bold {AMS_THOR}]{total_events}[/bold {AMS_THOR}]   "
+                f"[{AMS_TEXT}]Last 24h:[/{AMS_TEXT}] [bold {AMS_OK}]{recent_events}[/bold {AMS_OK}]   "
+                f"[{AMS_TEXT}]Recent sessions:[/{AMS_TEXT}] [bold {AMS_YELLOW}]{len(sessions)}[/bold {AMS_YELLOW}]",
+                title=f"[bold {AMS_BRAND}]AMSTech · RTL-SDR Statistics[/bold {AMS_BRAND}]",
+                border_style=AMS_BRAND,
+                box=box.ROUNDED,
+            )
+        )
 
         if sessions:
-            console.print("\n[bold]Recent Sessions[/bold]")
-            table = Table(show_header=True, header_style="bold magenta")
-            table.add_column("ID")
-            table.add_column("Start Time")
-            table.add_column("Frequency (MHz)")
-            table.add_column("Events")
+            table = Table(
+                title=f"[bold {AMS_TEXT}]Recent Sessions[/bold {AMS_TEXT}]",
+                box=box.ROUNDED,
+                border_style=AMS_LINE,
+                header_style=f"bold {AMS_THOR}",
+            )
+            table.add_column("ID", style=AMS_MUTED, justify="right")
+            table.add_column("Start Time (UTC)", style=AMS_TEXT)
+            table.add_column("Center (MHz)", style=AMS_THOR, justify="right")
+            table.add_column("Events", style=AMS_OK, justify="right")
 
             for session in sessions:
+                freq = (
+                    f"{session['center_freq_mhz']:.3f}"
+                    if session["center_freq_mhz"] is not None
+                    else "N/A"
+                )
                 table.add_row(
                     str(session["id"]),
-                    session["start_time"],
-                    f"{session['center_freq_mhz']:.3f}" if session["center_freq_mhz"] else "N/A",
+                    str(session["start_time"])[:19].replace("T", " "),
+                    freq,
                     str(session["total_events"]),
                 )
             console.print(table)
 
     def show_top_frequencies(self, limit: int = 10) -> None:
-        """Display the most active frequencies."""
+        """Display most active frequencies."""
         freqs = self.store.get_top_frequencies(limit)
-
         if not freqs:
-            console.print("[yellow]No frequency data available.[/yellow]")
+            console.print(f"[{AMS_MUTED}]No frequency detections recorded yet.[/{AMS_MUTED}]")
             return
 
-        console.print("\n[bold]🔥 Top Frequencies by Activity[/bold]")
-        table = Table(show_header=True, header_style="bold magenta")
-        table.add_column("Frequency (MHz)")
-        table.add_column("Detections")
-        table.add_column("Avg Power (dB)")
-        table.add_column("Max Power (dB)")
+        table = Table(
+            title=f"[bold {AMS_TEXT}]Top Active Frequencies[/bold {AMS_TEXT}]",
+            box=box.ROUNDED,
+            border_style=AMS_LINE,
+            header_style=f"bold {AMS_THOR}",
+        )
+        table.add_column("Frequency (MHz)", style=AMS_THOR, justify="right")
+        table.add_column("Detections", style=AMS_TEXT, justify="right")
+        table.add_column("Avg Power (dBFS)", style=AMS_MUTED, justify="right")
+        table.add_column("Peak Power (dBFS)", style=AMS_YELLOW, justify="right")
 
-        for f in freqs:
+        for item in freqs:
             table.add_row(
-                f"{f['frequency_mhz']:.3f}",
-                str(f["count"]),
-                f"{f['avg_power']:.1f}",
-                f"{f['max_power']:.1f}",
+                f"{item['frequency_mhz']:.3f}",
+                str(item["count"]),
+                f"{item['avg_power']:.1f}",
+                f"{item['max_power']:.1f}",
             )
         console.print(table)
 
     def show_hourly_activity(self) -> None:
-        """Display hourly detection activity."""
+        """Display hourly detection breakdown."""
         hours = self.store.get_hourly_activity()
-
         if not hours:
-            console.print("[yellow]No hourly data available.[/yellow]")
+            console.print(f"[{AMS_MUTED}]No hourly activity recorded yet.[/{AMS_MUTED}]")
             return
 
-        console.print("\n[bold]📈 Hourly Activity (Last 24h)[/bold]")
-        table = Table(show_header=True, header_style="bold magenta")
-        table.add_column("Hour")
-        table.add_column("Detections")
+        table = Table(
+            title=f"[bold {AMS_TEXT}]Hourly Activity (UTC, Last 24h)[/bold {AMS_TEXT}]",
+            box=box.ROUNDED,
+            border_style=AMS_LINE,
+            header_style=f"bold {AMS_THOR}",
+        )
+        table.add_column("Hour", style=AMS_TEXT)
+        table.add_column("Detections", style=AMS_OK, justify="right")
 
         for h in hours:
-            table.add_row(h["hour"], str(h["count"]))
+            table.add_row(str(h["hour"]), str(h["count"]))
         console.print(table)
 
     def show_recent_events(self, limit: int = 20) -> None:
         """Display recent detection events."""
         events = self.store.get_recent_events(limit)
-
         if not events:
-            console.print("[yellow]No recent events.[/yellow]")
+            console.print(f"[{AMS_MUTED}]No recent events.[/{AMS_MUTED}]")
             return
 
-        console.print(f"\n[bold]🔍 Last {limit} Detection Events[/bold]")
-        table = Table(show_header=True, header_style="bold magenta")
-        table.add_column("Time")
-        table.add_column("Freq (MHz)")
-        table.add_column("Power (dB)")
-        table.add_column("BW (Hz)")
-        table.add_column("Duration (s)")
-        table.add_column("Confidence")
+        table = Table(
+            title=f"[bold {AMS_TEXT}]Last {limit} Detections[/bold {AMS_TEXT}]",
+            box=box.ROUNDED,
+            border_style=AMS_LINE,
+            header_style=f"bold {AMS_THOR}",
+        )
+        table.add_column("Time (UTC)", style=AMS_MUTED)
+        table.add_column("Freq (MHz)", style=AMS_THOR, justify="right")
+        table.add_column("Power (dBFS)", style=AMS_YELLOW, justify="right")
+        table.add_column("SNR (dB)", style=AMS_OK, justify="right")
+        table.add_column("BW (kHz)", style=AMS_TEXT, justify="right")
+        table.add_column("Dur (s)", style=AMS_MUTED, justify="right")
 
         for e in events:
+            snr_str = f"{e['snr']:.1f}" if e["snr"] is not None else "—"
             table.add_row(
-                e["timestamp"][:19],
+                str(e["timestamp"])[:19].replace("T", " "),
                 f"{e['frequency_mhz']:.3f}",
                 f"{e['power_db']:.1f}",
-                f"{e['bandwidth_hz']:.0f}",
+                snr_str,
+                f"{e['bandwidth_hz'] / 1e3:.1f}",
                 f"{e['duration_s']:.2f}",
-                f"{e['confidence']:.2f}",
             )
         console.print(table)
 
     def export_csv(self, output_path: Path, since_hours: int | None = None) -> int:
-        """Export events to CSV and return count."""
+        """Export events to CSV and return exported count."""
         since = None
-        if since_hours:
-            since = (datetime.now() - timedelta(hours=since_hours)).isoformat()
-
+        if since_hours is not None:
+            since = (datetime.now(UTC) - timedelta(hours=since_hours)).isoformat()
         count = self.store.export_to_csv(output_path, since=since)
-        console.print(f"\n[green]Exported {count} events to {output_path}[/green]")
+        console.print(f"[{AMS_OK}]Exported {count} events to {output_path}[/{AMS_OK}]")
         return count

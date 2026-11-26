@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 200 200" role="img" aria-label="AMSTech — Built for me, shared with all">
+  <title>BUILT FOR ME · SHARED WITH ALL</title>
+  <defs>
+    <path id="seal-ring-en-dark" d="M100 100m-68 0a68 68 0 1 1 136 0a68 68 0 1 1 -136 0"/>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="#222229" stroke="#D9C26A" stroke-width="5"/>
+  <circle cx="100" cy="100" r="52" fill="none" stroke="#D9C26A" stroke-width="2.5" stroke-dasharray="2 6" stroke-linecap="round"/>
+  <text font-family="system-ui, -apple-system, 'Segoe UI', Arial, sans-serif" font-weight="800" font-size="16" fill="#D9C26A">
+    <textPath href="#seal-ring-en-dark" textLength="421" lengthAdjust="spacing">BUILT FOR ME · SHARED WITH ALL ·</textPath>
+  </text>
+  <g transform="translate(67 66) scale(1.38)">
+    <path d="M10 4L21 14h6L38 4l5 14q1 2 1 6v12q0 8-8 8H12q-8 0-8-8V24q0-4 1-6z" fill="#9EA6F2"/>
+    <path d="M13 25l6 5-6 5M24 36h10" fill="none" stroke="#18181D" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

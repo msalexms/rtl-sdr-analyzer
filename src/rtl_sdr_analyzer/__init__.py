@@ -1,3 +1,3 @@
-"""RTL-SDR Signal Analyzer & Jamming Detector."""
+"""RTL-SDR Analyzer by AMSTech."""
 
-__version__ = "2.0.0"
+__version__ = "3.0.0"

@@ -1,94 +1,82 @@
-"""Headless (non-GUI) visualization for daemon/CLI mode."""
+"""Headless console runner for daemon/CLI mode."""
 
 import logging
-from collections import deque
-from collections.abc import Callable
-from typing import Any
+import signal
+import threading
 
-import numpy as np
+from rich.console import Console
 
-from rtl_sdr_analyzer.detection.events import JammingEvent
+from rtl_sdr_analyzer.detection.events import SpectrumFrame
+from rtl_sdr_analyzer.engine.spectrum_engine import SpectrumEngine
 
 logger = logging.getLogger(__name__)
 
 
-class HeadlessVisualization:
-    """Console-only visualization that logs spectrum statistics.
-
-    Implements the same interface as :class:`MatplotlibVisualization`
-    so it can be swapped in when running without a display.
-    """
+class HeadlessRunner:
+    """Runs :class:`SpectrumEngine` cleanly in console/daemon mode until interrupted."""
 
     def __init__(
         self,
-        freq_range: np.ndarray,
-        waterfall_length: int = 50,
-        update_interval: int = 50,
-        log_interval_frames: int = 10,
-    ):
-        self.freq_range = freq_range
-        self.waterfall_length = waterfall_length
-        self.update_interval = update_interval
-        self.log_interval_frames = log_interval_frames
-        self._frame_count = 0
-        self._running = False
+        engine: SpectrumEngine,
+        *,
+        log_interval_frames: int = 20,
+        max_frames: int | None = None,
+        console: Console | None = None,
+    ) -> None:
+        self.engine = engine
+        self.log_interval_frames = max(1, log_interval_frames)
+        self.max_frames = max_frames
+        self.console = console or Console()
+        self._stop_event = threading.Event()
+        self._frames = 0
 
-        # Maintain a small history for basic stats
-        self.power_history: deque[float] = deque(maxlen=waterfall_length)
-
-    def update(
-        self,
-        spectrum: np.ndarray | None,
-        event: JammingEvent | None = None,
-    ) -> list[Any]:
-        """Log spectrum statistics instead of rendering."""
-        if spectrum is None:
-            return []
-
-        self._frame_count += 1
-        self.power_history.append(float(np.mean(spectrum)))
-
-        if self._frame_count % self.log_interval_frames == 0:
-            pmin = float(np.min(spectrum))
-            pmax = float(np.max(spectrum))
-            mean = float(np.mean(spectrum))
+    def _on_frame(self, frame: SpectrumFrame) -> None:
+        self._frames += 1
+        if self._frames % self.log_interval_frames == 0:
             logger.info(
-                "Spectrum stats [%d] | mean=%.1f dB | min=%.1f dB | max=%.1f dB",
-                self._frame_count,
-                mean,
-                pmin,
-                pmax,
+                "Spectrum [%d] | center=%.3f MHz | floor=%.1f dBFS | peak=%.4f MHz (%.1f dBFS, SNR %.1f dB) | %.1f fps",
+                frame.seq,
+                frame.center_freq_hz / 1e6,
+                frame.noise_floor_db,
+                frame.peak_freq_mhz,
+                frame.peak_power_db,
+                frame.peak_snr_db,
+                frame.fps,
             )
-
-        if event:
-            logger.info(
-                "DETECTION | freq=%.3f MHz | power=%.1f dB | bw=%.0f Hz | dur=%.2f s | conf=%.2f",
-                event.frequency,
-                event.power,
-                event.bandwidth,
-                event.duration,
-                event.confidence,
+        if frame.event is not None:
+            ev = frame.event
+            self.console.print(
+                f"[bold #D9C26A]SIGNAL[/bold #D9C26A] "
+                f"[bold #9EA6F2]{ev.frequency:.4f} MHz[/bold #9EA6F2]  "
+                f"power=[#E9E6E0]{ev.power:.1f} dBFS[/#E9E6E0]  "
+                f"snr=[#8FD3A4]+{ev.snr:.1f} dB[/#8FD3A4]  "
+                f"bw=[#9E9AA8]{ev.bandwidth / 1e3:.1f} kHz[/#9E9AA8]  "
+                f"dur=[#9E9AA8]{ev.duration:.2f}s[/#9E9AA8]"
             )
+        if self.max_frames is not None and self._frames >= self.max_frames:
+            self._stop_event.set()
 
-        return []
+    def run(self) -> int:
+        """Start engine and block until SIGINT/SIGTERM or ``max_frames``."""
+        self._stop_event.clear()
+        self._frames = 0
+        self.engine.subscribe_frames(self._on_frame)
 
-    def start(self, update_func: Callable[[int], list[Any]]) -> None:
-        """Run the update loop without matplotlib.
+        prev_sigterm = None
+        if threading.current_thread() is threading.main_thread():
+            prev_sigterm = signal.getsignal(signal.SIGTERM)
+            signal.signal(signal.SIGTERM, lambda *_: self._stop_event.set())
 
-        Relies on the outer signal handler (registered by Analyzer) to set
-        _running = False on SIGINT/SIGTERM.
-        """
-        self._running = True
-        while self._running:
-            try:
-                update_func(0)
-            except Exception as exc:  # noqa: BLE001
-                logger.error("Error in headless update loop: %s", exc)
-
-    def stop(self) -> None:
-        """Signal the loop to exit."""
-        self._running = False
-
-    def get_artists(self) -> list[Any]:
-        """No artists in headless mode."""
-        return []
+        try:
+            self.engine.start()
+            while not self._stop_event.wait(0.2):
+                if not self.engine.is_running:
+                    break
+        except KeyboardInterrupt:
+            logger.info("Interrupted by user.")
+        finally:
+            self.engine.unsubscribe_frames(self._on_frame)
+            self.engine.stop()
+            if prev_sigterm is not None:
+                signal.signal(signal.SIGTERM, prev_sigterm)
+        return self._frames

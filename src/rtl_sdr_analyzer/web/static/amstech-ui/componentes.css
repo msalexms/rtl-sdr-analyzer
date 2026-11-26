@@ -1,0 +1,178 @@
+/* AMSTech UI · componentes · v1.0
+   Necesita tokens.css (y fuentes.css). Todas las clases empiezan por «ams-» para no chocar con las de cada app.
+   Reglas de la marca: una caja azul (.ams-caja--principal) por pantalla; nada de orejas en las cajas;
+   el texto siempre en --ams-texto; los colores de serie solo en pegatinas y fondos tintados. */
+
+/* ============ base (opcional: pon class="ams" en <body> o en el contenedor de la app) ============ */
+.ams { background: var(--ams-fondo); color: var(--ams-texto); font: 400 var(--ams-t-texto)/1.55 var(--ams-letra); -webkit-font-smoothing: antialiased; }
+.ams *, .ams *::before, .ams *::after { box-sizing: border-box; }
+.ams a { color: var(--ams-marca); }
+.ams :focus-visible { outline: 3px solid var(--ams-marca); outline-offset: 3px; border-radius: var(--ams-radio-peq); }
+.ams code, .ams kbd, .ams-mono { font-family: var(--ams-letra-mono); }
+.ams-num { font-family: var(--ams-letra-mono); font-variant-numeric: tabular-nums; }
+
+/* ============ textos ============ */
+.ams-portada { font: 800 var(--ams-t-portada)/.98 var(--ams-letra-marca); letter-spacing: -.045em; margin: 0; }
+.ams-titulo { font: 800 var(--ams-t-1)/1.02 var(--ams-letra-marca); letter-spacing: -.035em; margin: 0; }
+.ams-h2 { font: 800 var(--ams-t-2)/1.1 var(--ams-letra-marca); letter-spacing: -.02em; margin: 0; }
+.ams-h3 { font: 800 var(--ams-t-3)/1.2 var(--ams-letra-marca); letter-spacing: -.01em; margin: 0; }
+.ams-rotulo { font: 800 var(--ams-t-etiqueta)/1.2 var(--ams-letra); letter-spacing: .09em; text-transform: uppercase; color: var(--ams-gris); }
+.ams-texto-2 { color: var(--ams-texto-2); }
+.ams-gris { color: var(--ams-gris); }
+.ams kbd, .ams-tecla { font: 500 11.5px var(--ams-letra-mono); border: 1.5px solid currentColor; border-radius: var(--ams-radio-peq); padding: 0 5px; }
+
+/* ============ logo de Thor (SVG en línea, ver README) ============ */
+.ams-thor { display: block; flex: none; }
+.ams-thor .cabeza { fill: var(--ams-thor); stroke: var(--ams-thor-borde); stroke-width: 2.6; stroke-linejoin: round; }
+.ams-thor .prompt { fill: none; stroke: var(--ams-thor-prompt); stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; }
+.ams-thor--plano .cabeza { stroke: transparent; }
+.ams-marca { display: flex; align-items: center; gap: 10px; font: 800 23px/1 var(--ams-letra-marca); letter-spacing: -.02em; color: var(--ams-texto); text-decoration: none; }
+.ams-marca small { font: 700 13px var(--ams-letra); letter-spacing: 0; color: var(--ams-gris); border-left: 2px solid var(--ams-linea); padding-left: 10px; }
+
+/* ============ cajas ============ */
+.ams-caja { background: var(--ams-superficie); border: var(--ams-borde-ancho) solid var(--ams-borde); border-radius: var(--ams-radio); box-shadow: var(--ams-sombra); padding: var(--ams-e4) var(--ams-e4); }
+.ams-caja--plana { box-shadow: none; }
+.ams-caja--crema { background: var(--ams-fondo); }
+.ams-caja--sin-relleno { padding: 0; }
+.ams-caja--principal { background: var(--ams-principal); border-color: var(--ams-principal-borde); color: var(--ams-sobre-principal); }
+.ams-caja--principal p, .ams-caja--principal .ams-rotulo { color: var(--ams-sobre-principal-2); }
+.ams-caja--principal :focus-visible { outline-color: var(--ams-sobre-principal); }
+/* fondo teñido con el color de la serie: style="--ams-c: var(--ams-serie-cripto)" */
+.ams-caja--serie, .ams-tinte { background: color-mix(in srgb, var(--ams-c, var(--ams-serie-neutra)) var(--ams-tinte), var(--ams-superficie)); }
+a.ams-caja { color: inherit; text-decoration: none; display: block; transition: transform .12s, box-shadow .12s; }
+a.ams-caja:hover { transform: translate(-1px, -1px); }
+/* filas dentro de una caja */
+.ams-fila { display: flex; align-items: center; justify-content: space-between; gap: var(--ams-e3); padding: 11px var(--ams-e4); border-top: var(--ams-borde-fino) solid var(--ams-linea); }
+.ams-fila:first-child { border-top: 0; }
+/* modo denso (telemetría, tablas largas): sin sombra dentro de otra caja */
+.ams-denso .ams-caja .ams-caja, .ams-caja .ams-caja--plana { box-shadow: none; }
+
+/* ============ botones ============ */
+.ams-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 42px; padding: 0 16px; border-radius: var(--ams-radio); border: var(--ams-borde-ancho) solid var(--ams-borde); background: var(--ams-superficie); color: var(--ams-texto); font: 800 14.5px/1 var(--ams-letra); text-decoration: none; white-space: nowrap; cursor: pointer; box-shadow: var(--ams-sombra-peq); transition: transform .1s, box-shadow .1s; }
+.ams-btn:hover { transform: translate(-1px, -1px); }
+.ams-btn:active { transform: translate(2px, 2px); box-shadow: none; }
+.ams-btn:disabled, .ams-btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; transform: none; }
+.ams-btn--principal { background: var(--ams-marca); color: var(--ams-sobre-marca); }
+.ams-btn--principal:hover { background: var(--ams-marca-hover); }
+.ams-btn--amarillo { background: var(--ams-etq-amarilla-fondo); border-color: var(--ams-etq-amarilla-borde); color: var(--ams-etq-amarilla-texto); }
+.ams-btn--peligro { color: var(--ams-mal); }
+.ams-btn--peq { height: 34px; padding: 0 12px; font-size: 13.5px; }
+.ams-btn--icono { width: 42px; padding: 0; }
+.ams-btn svg { flex: none; }
+.ams-caja--principal .ams-btn { background: var(--ams-sobre-principal); color: var(--ams-principal); border-color: var(--ams-sobre-principal); }
+
+/* ============ etiquetas y puntos ============ */
+.ams-etiqueta { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 1px 9px; border: 2px solid var(--ams-borde); border-radius: var(--ams-radio); background: var(--ams-superficie); color: var(--ams-texto); font: 800 12.5px/1.2 var(--ams-letra); white-space: nowrap; }
+.ams-etiqueta--amarilla { background: var(--ams-etq-amarilla-fondo); border-color: var(--ams-etq-amarilla-borde); color: var(--ams-etq-amarilla-texto); }
+.ams-etiqueta--ok { background: var(--ams-ok-fondo); border-color: var(--ams-ok-borde); color: var(--ams-ok); }
+.ams-etiqueta--mal { background: var(--ams-mal-fondo); border-color: var(--ams-mal-borde); color: var(--ams-mal); }
+.ams-etiqueta--serie { background: color-mix(in srgb, var(--ams-c) var(--ams-tinte), var(--ams-superficie)); }
+.ams-punto { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--ams-c, var(--ams-gris)); border: 2px solid var(--ams-borde); flex: none; }
+.ams-punto--directo { background: var(--ams-senal); }
+.ams-punto--ok { background: var(--ams-serie-homelab); }
+.ams-cuadro { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: var(--ams-c); border: 2px solid var(--ams-borde); flex: none; }
+
+/* ============ aviso («Ojo», enlace saturado…) ============ */
+.ams-aviso { background: var(--ams-aviso-fondo); border: var(--ams-borde-ancho) solid var(--ams-aviso-borde); border-radius: var(--ams-radio); padding: var(--ams-e3) 14px; color: var(--ams-aviso-texto); }
+.ams-aviso > b, .ams-aviso .ams-aviso-titulo { display: flex; align-items: center; gap: 8px; font: 800 16px/1.25 var(--ams-letra-marca); color: var(--ams-aviso-titulo); }
+.ams-aviso p { margin: 4px 0 0; font-size: 14.5px; }
+
+/* ============ cajetín (caja de datos) ============ */
+.ams-cajetin { display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); gap: 2px; background: var(--ams-borde); border: var(--ams-borde-ancho) solid var(--ams-borde); border-radius: var(--ams-radio); overflow: hidden; margin: 0; }
+.ams-cajetin > div { background: var(--ams-superficie); padding: 7px 11px 8px; min-width: 0; }
+.ams-cajetin dt, .ams-cajetin small { display: block; font: 800 10.5px/1.2 var(--ams-letra); letter-spacing: .09em; text-transform: uppercase; color: var(--ams-gris); margin: 0 0 1px; }
+.ams-cajetin dd, .ams-cajetin b { display: block; margin: 0; font: 700 15px/1.3 var(--ams-letra); color: var(--ams-texto); }
+.ams-cajetin .ams-mono, .ams-cajetin .ams-num { font: 500 14.5px/1.3 var(--ams-letra-mono); }
+.ams-cajetin .ancho { grid-column: span 2; }
+
+/* ============ tabla ============ */
+.ams-tabla { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+.ams-tabla th { text-align: left; font: 800 11px/1.2 var(--ams-letra); letter-spacing: .09em; text-transform: uppercase; color: var(--ams-gris); padding: 8px 12px; border-bottom: var(--ams-borde-ancho) solid var(--ams-borde); }
+.ams-tabla td { padding: 9px 12px; border-bottom: var(--ams-borde-fino) solid var(--ams-linea); vertical-align: middle; }
+.ams-tabla tr:last-child td { border-bottom: 0; }
+.ams-tabla .ams-mono { font-size: 14px; }
+
+/* ============ formularios ============ */
+.ams-campo { display: grid; gap: 4px; }
+.ams-campo > span, .ams-campo > label { font: 800 11px/1.2 var(--ams-letra); letter-spacing: .09em; text-transform: uppercase; color: var(--ams-gris); }
+.ams-entrada, .ams-select select, .ams-area { width: 100%; min-height: 42px; padding: 8px 12px; border: var(--ams-borde-ancho) solid var(--ams-borde); border-radius: var(--ams-radio); background: var(--ams-superficie); color: var(--ams-texto); font: 600 15px/1.3 var(--ams-letra); }
+.ams-area { min-height: 90px; resize: vertical; font-weight: 500; }
+.ams-entrada::placeholder, .ams-area::placeholder { color: var(--ams-gris); font-weight: 500; }
+.ams-select { position: relative; }
+.ams-select select { appearance: none; -webkit-appearance: none; padding-right: 34px; cursor: pointer; }
+.ams-select::after { content: ""; position: absolute; right: 13px; top: 50%; width: 8px; height: 8px; border-right: 2.5px solid var(--ams-texto); border-bottom: 2.5px solid var(--ams-texto); transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+/* interruptor: <label class="ams-interruptor"><input type="checkbox"><i></i></label> */
+.ams-interruptor { position: relative; display: inline-block; width: 50px; height: 28px; flex: none; }
+.ams-interruptor input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+.ams-interruptor i { position: absolute; inset: 0; border: var(--ams-borde-ancho) solid var(--ams-borde); border-radius: var(--ams-radio); background: var(--ams-superficie); transition: background .15s; }
+.ams-interruptor i::after { content: ""; position: absolute; left: 3px; top: 3px; width: 17px; height: 17px; border-radius: 3px; background: var(--ams-texto); transition: transform .15s; }
+.ams-interruptor input:checked + i { background: var(--ams-marca); }
+.ams-interruptor input:checked + i::after { transform: translateX(22px); background: var(--ams-sobre-marca); }
+.ams-interruptor input:focus-visible + i { outline: 3px solid var(--ams-marca); outline-offset: 3px; }
+/* segmentos: <div class="ams-segmentos"><label><input type="radio" name="x" checked><span>Uno</span></label>…</div> */
+.ams-segmentos { display: inline-flex; border: var(--ams-borde-ancho) solid var(--ams-borde); border-radius: var(--ams-radio); overflow: hidden; background: var(--ams-superficie); }
+.ams-segmentos label { position: relative; flex: 1; cursor: pointer; border-left: 2px solid var(--ams-borde); }
+.ams-segmentos label:first-child { border-left: 0; }
+.ams-segmentos input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.ams-segmentos span { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; height: 100%; padding: 0 12px; font: 800 14px/1 var(--ams-letra); white-space: nowrap; color: var(--ams-texto); }
+.ams-segmentos input:checked + span { background: var(--ams-sel-fondo); color: var(--ams-sel-texto); box-shadow: inset 0 -3px 0 var(--ams-sel-raya); }
+.ams-segmentos input:focus-visible + span { outline: 3px solid var(--ams-marca); outline-offset: -5px; }
+/* deslizador */
+.ams-rango { -webkit-appearance: none; appearance: none; width: 100%; height: 24px; background: transparent; cursor: pointer; margin: 0; --v: 50%; }
+.ams-rango::-webkit-slider-runnable-track { height: 10px; border: 2px solid var(--ams-borde); border-radius: var(--ams-radio-peq); background: linear-gradient(90deg, var(--ams-marca) var(--v), var(--ams-superficie) var(--v)); }
+.ams-rango::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8px; border: var(--ams-borde-ancho) solid var(--ams-borde); border-radius: var(--ams-radio-peq); background: var(--ams-amarillo); box-shadow: 2px 2px 0 var(--ams-sombra-color); }
+.ams-rango::-moz-range-track { height: 6px; border: 2px solid var(--ams-borde); border-radius: var(--ams-radio-peq); background: var(--ams-superficie); }
+.ams-rango::-moz-range-progress { height: 6px; background: var(--ams-marca); }
+.ams-rango::-moz-range-thumb { width: 18px; height: 18px; border: var(--ams-borde-ancho) solid var(--ams-borde); border-radius: var(--ams-radio-peq); background: var(--ams-amarillo); }
+
+/* ============ navegación ============ */
+.ams-cabecera { display: flex; align-items: center; gap: var(--ams-e4); min-height: 68px; padding: 0 var(--ams-e5); background: var(--ams-superficie); border-bottom: var(--ams-borde-ancho) solid var(--ams-borde); }
+.ams-cabecera .ams-hueco { flex: 1; }
+.ams-pestanas { display: flex; gap: 4px; }
+.ams-pestanas a { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border: var(--ams-borde-ancho) solid transparent; border-radius: var(--ams-radio); color: var(--ams-texto); font: 800 15px/1 var(--ams-letra); text-decoration: none; }
+.ams-pestanas a:hover { border-color: var(--ams-borde); }
+.ams-pestanas a[aria-current] { background: var(--ams-sel-fondo); color: var(--ams-sel-texto); border-color: var(--ams-borde); box-shadow: var(--ams-sombra-peq), inset 0 -3px 0 var(--ams-sel-raya); }
+.ams-pestanas .n { font: 500 12px var(--ams-letra-mono); color: var(--ams-gris); }
+/* barra de abajo en el móvil: <nav class="ams-barra-movil"><a aria-current="page"><svg/>Inicio</a>…<a class="ams-fab">+</a>…</nav> */
+.ams-barra-movil { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; align-items: end; min-height: 64px; padding: 8px 6px calc(10px + env(safe-area-inset-bottom)); background: var(--ams-superficie); border-top: var(--ams-borde-ancho) solid var(--ams-borde); }
+.ams-barra-movil a { display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--ams-gris); font: 800 11.5px/1.1 var(--ams-letra); text-decoration: none; }
+.ams-barra-movil a svg { width: 26px; height: 26px; padding: 2px; border-radius: var(--ams-radio); }
+.ams-barra-movil a[aria-current] { color: var(--ams-texto); }
+.ams-barra-movil a[aria-current] svg { background: var(--ams-sel-fondo); color: var(--ams-sel-texto); outline: 2px solid var(--ams-borde); }
+:root[data-tema="noche"] .ams-barra-movil a[aria-current] svg { color: var(--ams-amarillo); outline-color: var(--ams-amarillo); }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]):not([data-tema="noche"]) .ams-barra-movil a[aria-current] svg { color: var(--ams-amarillo); outline-color: var(--ams-amarillo); } }
+.ams-barra-movil .ams-fab { align-self: start; justify-self: center; width: 56px; height: 56px; margin-top: -26px; border: var(--ams-borde-ancho) solid var(--ams-borde); border-radius: var(--ams-radio); background: var(--ams-marca); color: var(--ams-sobre-marca); display: grid; place-items: center; box-shadow: var(--ams-sombra-peq); }
+.ams-migas { font-size: 14.5px; color: var(--ams-gris); }
+.ams-migas a { color: var(--ams-texto); font-weight: 800; text-decoration: none; }
+
+/* ============ terminal ============ */
+.ams-terminal { position: relative; background: var(--ams-terminal-fondo); color: var(--ams-terminal-texto); border-radius: var(--ams-radio); padding: 12px 14px; font: 500 14.5px/1.55 var(--ams-letra-mono); overflow-x: auto; white-space: pre; }
+.ams-terminal .ams-gris, .ams-terminal small { color: var(--ams-terminal-gris); }
+.ams-terminal > button { position: absolute; right: 10px; top: 8px; height: 30px; padding: 0 12px; border: 0; border-radius: var(--ams-radio-peq); background: var(--ams-terminal-texto); color: var(--ams-terminal-fondo); font: 800 13px var(--ams-letra); cursor: pointer; }
+
+/* ============ barra de capítulos (ver barra-capitulos.js) ============ */
+.ams-barra-cap svg { display: block; overflow: visible; width: 100%; height: auto; }
+.ams-barra-cap .linea { fill: none; stroke: var(--ams-marca); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+.ams-barra-cap .orejas { fill: none; stroke: var(--ams-texto); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+.ams-barra-cap .punto { fill: var(--ams-senal); }
+.ams-barra-cap ol { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; list-style: none; margin: 0; padding: 0; }
+.ams-barra-cap li { min-width: 0; text-align: center; }
+.ams-barra-cap li a, .ams-barra-cap li span { display: block; padding-top: 3px; font: 500 12.5px/1.3 var(--ams-letra-mono); color: var(--ams-gris); text-decoration: none; }
+.ams-barra-cap li [aria-current] { color: var(--ams-texto); }
+
+/* ============ pegatinas y dibujos ============ */
+.ams-pegatina { display: inline-block; flex: none; filter: drop-shadow(3px 3px 0 var(--ams-sombra-color)); }
+.ams-pegatina svg, .ams-pegatina img { display: block; }
+.ams-dibujo { display: block; max-width: 100%; height: auto; filter: var(--ams-dibujo-filtro); }
+
+/* ============ menú y diálogo ============ */
+.ams-menu { background: var(--ams-superficie); border: var(--ams-borde-ancho) solid var(--ams-borde); border-radius: var(--ams-radio); box-shadow: var(--ams-sombra); padding: 4px 0; }
+.ams-menu a, .ams-menu button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 14px; border: 0; border-top: var(--ams-borde-fino) solid var(--ams-linea); background: none; color: var(--ams-texto); font: 700 15px/1.3 var(--ams-letra); text-align: left; text-decoration: none; cursor: pointer; }
+.ams-menu > :first-child { border-top: 0; }
+.ams-menu a:hover, .ams-menu button:hover { background: var(--ams-superficie-2); }
+dialog.ams-dialogo { background: var(--ams-fondo); color: var(--ams-texto); border: var(--ams-borde-ancho) solid var(--ams-borde); border-radius: var(--ams-radio); box-shadow: 8px 8px 0 var(--ams-sombra-color); padding: 20px 22px; max-width: min(900px, calc(100vw - 32px)); }
+dialog.ams-dialogo::backdrop { background: rgba(14, 14, 18, .5); }
+.ams-aviso-flotante { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ams-terminal-fondo); color: var(--ams-terminal-texto); border-radius: var(--ams-radio); padding: 10px 16px; font: 700 14.5px var(--ams-letra); box-shadow: var(--ams-sombra-peq); }
+
+/* ============ accesibilidad ============ */
+@media (prefers-reduced-motion: reduce) { .ams-btn, a.ams-caja, .ams-interruptor i, .ams-interruptor i::after { transition: none; } }

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" role="img" width="72" height="72" viewBox="0 0 72 72" aria-label="rtl-sdr-analyzer · RF scope">
+  <title>rtl-sdr-analyzer · RF scope</title>
+  <path d="M16 4l11 10h18L56 4l5 15v13H11V19z" fill="#2B36D9" stroke="#1E1B2E" stroke-width="3.2" stroke-linejoin="round"/>
+  <circle cx="24" cy="18.5" r="2.5" fill="#FFFFFF"/>
+  <circle cx="48" cy="18.5" r="2.5" fill="#FFFFFF"/>
+  <rect x="5" y="23" width="62" height="42" rx="8" fill="#18181D" stroke="#1E1B2E" stroke-width="3.2"/>
+  <circle cx="14" cy="29.5" r="2" fill="#FF5C39"/>
+  <circle cx="20.5" cy="29.5" r="2" fill="#FFE27A"/>
+  <circle cx="27" cy="29.5" r="2" fill="#6FD08C"/>
+  <line x1="9" y1="34" x2="63" y2="34" stroke="#3A3A45" stroke-width="1.5"/>
+  <line x1="11" y1="45" x2="61" y2="45" stroke="#2A2A35" stroke-width="1" stroke-dasharray="2 2"/>
+  <line x1="36" y1="36" x2="36" y2="55" stroke="#2A2A35" stroke-width="1" stroke-dasharray="2 2"/>
+  <path d="M11 53 L17 52 L21 48 L24 52 L29 51 L33 49 L36 37 L39 49 L44 52 L48 44 L51 51 L56 52 L61 53" fill="none" stroke="#7CC4FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="36" cy="37" r="2.3" fill="#FFE27A" stroke="#18181D" stroke-width="1"/>
+  <rect x="11" y="57" width="12" height="3.2" rx="1" fill="#2B36D9"/>
+  <rect x="24" y="57" width="9" height="3.2" rx="1" fill="#6FD08C"/>
+  <rect x="34" y="57" width="5" height="3.2" rx="1" fill="#FF5C39"/>
+  <rect x="40" y="57" width="7" height="3.2" rx="1" fill="#7CC4FF"/>
+  <rect x="48" y="57" width="13" height="3.2" rx="1" fill="#2B36D9"/>
+  <rect x="2" y="39" width="8" height="12" rx="4" fill="#2B36D9" stroke="#1E1B2E" stroke-width="2.8"/>
+  <rect x="62" y="39" width="8" height="12" rx="4" fill="#2B36D9" stroke="#1E1B2E" stroke-width="2.8"/>
+</svg>

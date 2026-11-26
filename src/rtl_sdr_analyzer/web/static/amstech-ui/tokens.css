@@ -1,0 +1,161 @@
+/* AMSTech UI · tokens · v1.0 (manual de marca v1.3)
+   Un solo archivo con todos los valores de la marca. Los componentes solo usan estas variables.
+   Tema: <html data-tema="claro | noche | auto">  (sin atributo o "auto" = sigue al sistema). */
+
+:root {
+  /* ---- letras ---- */
+  --ams-letra-marca: 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif;
+  --ams-letra: 'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ams-letra-mono: 'DM Mono', ui-monospace, 'Cascadia Code', Consolas, Menlo, monospace;
+
+  /* ---- forma ---- */
+  --ams-radio: 6px;              /* esquinas rectas, no cortantes */
+  --ams-radio-peq: 4px;
+  --ams-borde-ancho: 2.5px;
+  --ams-borde-fino: 1.5px;       /* separadores dentro de una caja */
+
+  /* ---- espacios (múltiplos de 4) ---- */
+  --ams-e1: 4px; --ams-e2: 8px; --ams-e3: 12px; --ams-e4: 16px; --ams-e5: 24px; --ams-e6: 32px; --ams-e7: 48px;
+
+  /* ---- tamaños de letra ---- */
+  --ams-t-portada: 70px;  /* titular de portada · Bricolage 800 */
+  --ams-t-1: 40px;        /* título de página */
+  --ams-t-2: 28px;        /* título de sección */
+  --ams-t-3: 21px;        /* título de caja */
+  --ams-t-texto: 16px;    /* texto */
+  --ams-t-peq: 14px;
+  --ams-t-etiqueta: 11px; /* rótulos en mayúsculas */
+
+  /* ---- colores de serie / tema (no cambian con el modo) ---- */
+  --ams-serie-homelab: #6FD08C;
+  --ams-serie-cripto: #FF9F4A;
+  --ams-serie-cripto-2: #FFD23F;
+  --ams-serie-ia: #B48CFF;
+  --ams-serie-ia-2: #FF8FB8;
+  --ams-serie-vision: #7CC4FF;
+  --ams-serie-neutra: #C9C6DA;
+
+  /* ================= MODO CLARO (por defecto) ================= */
+  --ams-fondo: #FFF6E9;            /* crema */
+  --ams-superficie: #FFFFFF;       /* cajas */
+  --ams-superficie-2: #F7EFE0;     /* filas, cabeceras de tabla, campos apagados */
+  --ams-borde: #1E1B2E;            /* tinta */
+  --ams-linea: #E9DFCB;            /* separadores finos */
+  --ams-sombra-color: #1E1B2E;
+  --ams-sombra: 4px 4px 0 var(--ams-sombra-color);
+  --ams-sombra-peq: 2.5px 2.5px 0 var(--ams-sombra-color);
+  --ams-texto: #1E1B2E;
+  --ams-texto-2: #3B3850;
+  --ams-gris: #5A5670;             /* ≥ 4,5:1 sobre crema y blanco */
+
+  --ams-marca: #2B36D9;            /* cobalto: botón principal, enlaces */
+  --ams-marca-hover: #1F28B0;
+  --ams-sobre-marca: #FFFFFF;
+
+  --ams-principal: #2B36D9;        /* la caja azul: lo principal de la pantalla (una por pantalla) */
+  --ams-principal-borde: #1E1B2E;
+  --ams-sobre-principal: #FFFFFF;
+  --ams-sobre-principal-2: #DADDFF;
+
+  --ams-amarillo: #FFE27A;
+  --ams-sel-fondo: #FFE27A;        /* seleccionado: relleno amarillo en claro */
+  --ams-sel-texto: #1E1B2E;
+  --ams-sel-raya: transparent;
+  --ams-etq-amarilla-fondo: #FFE27A;
+  --ams-etq-amarilla-borde: #1E1B2E;
+  --ams-etq-amarilla-texto: #1E1B2E;
+
+  --ams-aviso-fondo: #FFE27A;
+  --ams-aviso-borde: #1E1B2E;
+  --ams-aviso-titulo: #1E1B2E;
+  --ams-aviso-texto: #3B3850;
+
+  --ams-ok: #1A7F44;  --ams-ok-fondo: #DDF3E4;  --ams-ok-borde: #1E1B2E;
+  --ams-mal: #B42318; --ams-mal-fondo: #FFE2DF; --ams-mal-borde: #1E1B2E;
+  --ams-senal: #FF5C39;            /* solo el punto de la barra de capítulos y «en directo» */
+
+  --ams-terminal-fondo: #1E1B2E;
+  --ams-terminal-texto: #FFFFFF;
+  --ams-terminal-gris: #C2C5D6;
+
+  --ams-thor: #2B36D9;             /* cabeza del logo */
+  --ams-thor-prompt: #FFFFFF;
+  --ams-thor-borde: #1E1B2E;
+
+  --ams-tinte: 38%;                /* % del color de serie al teñir un fondo */
+  --ams-dibujo-filtro: none;       /* dibujos y fotos */
+  color-scheme: light;
+}
+
+/* ================= MODO NOCHE (suave) ================= */
+:root[data-tema="noche"] {
+  --ams-fondo: #18181D;
+  --ams-superficie: #222229;
+  --ams-superficie-2: #2A2A32;
+  --ams-borde: #3A3A45;
+  --ams-linea: #2E2E37;
+  --ams-sombra-color: #0E0E12;
+  --ams-sombra: 3px 3px 0 var(--ams-sombra-color);
+  --ams-sombra-peq: 2px 2px 0 var(--ams-sombra-color);
+  --ams-texto: #E9E6E0;
+  --ams-texto-2: #C4C0CB;
+  --ams-gris: #9E9AA8;
+
+  --ams-marca: #7F89E8;
+  --ams-marca-hover: #9AA2EE;
+  --ams-sobre-marca: #15151A;
+
+  --ams-principal: #262A55;
+  --ams-principal-borde: #3E4380;
+  --ams-sobre-principal: #E9E6E0;
+  --ams-sobre-principal-2: #C3C7EE;
+
+  --ams-amarillo: #D9C26A;
+  --ams-sel-fondo: #2E2E38;        /* seleccionado: tono más claro + raya amarilla */
+  --ams-sel-texto: #E9E6E0;
+  --ams-sel-raya: #D9C26A;
+  --ams-etq-amarilla-fondo: transparent;
+  --ams-etq-amarilla-borde: #6E6234;
+  --ams-etq-amarilla-texto: #D9C26A;
+
+  --ams-aviso-fondo: #26231A;
+  --ams-aviso-borde: #5C5230;
+  --ams-aviso-titulo: #D9C26A;
+  --ams-aviso-texto: #CFC8B4;
+
+  --ams-ok: #8FD3A4;  --ams-ok-fondo: transparent; --ams-ok-borde: #3D5E48;
+  --ams-mal: #F0A094; --ams-mal-fondo: transparent; --ams-mal-borde: #6B3A33;
+  --ams-senal: #E07A62;
+
+  --ams-terminal-fondo: #111115;
+  --ams-terminal-texto: #E9E6E0;
+  --ams-terminal-gris: #9E9AA8;
+
+  --ams-thor: #9EA6F2;
+  --ams-thor-prompt: #18181D;
+  --ams-thor-borde: transparent;
+
+  --ams-tinte: 12%;
+  --ams-dibujo-filtro: brightness(.82) saturate(.85);
+  color-scheme: dark;
+}
+
+/* «auto»: lo mismo que noche cuando el sistema está en oscuro (mantener igual que el bloque de arriba) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]):not([data-tema="noche"]) {
+    --ams-fondo: #18181D; --ams-superficie: #222229; --ams-superficie-2: #2A2A32; --ams-borde: #3A3A45; --ams-linea: #2E2E37;
+    --ams-sombra-color: #0E0E12; --ams-sombra: 3px 3px 0 var(--ams-sombra-color); --ams-sombra-peq: 2px 2px 0 var(--ams-sombra-color);
+    --ams-texto: #E9E6E0; --ams-texto-2: #C4C0CB; --ams-gris: #9E9AA8;
+    --ams-marca: #7F89E8; --ams-marca-hover: #9AA2EE; --ams-sobre-marca: #15151A;
+    --ams-principal: #262A55; --ams-principal-borde: #3E4380; --ams-sobre-principal: #E9E6E0; --ams-sobre-principal-2: #C3C7EE;
+    --ams-amarillo: #D9C26A; --ams-sel-fondo: #2E2E38; --ams-sel-texto: #E9E6E0; --ams-sel-raya: #D9C26A;
+    --ams-etq-amarilla-fondo: transparent; --ams-etq-amarilla-borde: #6E6234; --ams-etq-amarilla-texto: #D9C26A;
+    --ams-aviso-fondo: #26231A; --ams-aviso-borde: #5C5230; --ams-aviso-titulo: #D9C26A; --ams-aviso-texto: #CFC8B4;
+    --ams-ok: #8FD3A4; --ams-ok-fondo: transparent; --ams-ok-borde: #3D5E48;
+    --ams-mal: #F0A094; --ams-mal-fondo: transparent; --ams-mal-borde: #6B3A33; --ams-senal: #E07A62;
+    --ams-terminal-fondo: #111115; --ams-terminal-texto: #E9E6E0; --ams-terminal-gris: #9E9AA8;
+    --ams-thor: #9EA6F2; --ams-thor-prompt: #18181D; --ams-thor-borde: transparent;
+    --ams-tinte: 12%; --ams-dibujo-filtro: brightness(.82) saturate(.85);
+    color-scheme: dark;
+  }
+}

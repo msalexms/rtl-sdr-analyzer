@@ -1,76 +1,33 @@
-"""Tests for IQ recording."""
+"""Unit tests for IQRecorder (raw clipped uint8, numpy metadata, live tap)."""
 
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import numpy as np
-import pytest
 
 from rtl_sdr_analyzer.recording.recorder import IQRecorder
-
-
-@pytest.fixture
-def mock_rtlsdr() -> MagicMock:
-    rtl = MagicMock()
-    rtl.center_freq = 100e6
-    rtl.sample_rate = 2.048e6
-    return rtl
-
-
-def _cycling_side_effect(values: list) -> object:
-    """Return a callable that yields values then None forever."""
-    it = iter(values)
-
-    def _fn() -> object:
-        try:
-            return next(it)
-        except StopIteration:
-            return None
-
-    return _fn
+from rtl_sdr_analyzer.sources.simulated import SimulatedSource
 
 
 class TestIQRecorder:
-    def test_raw_recording(self, tmp_path: Path, mock_rtlsdr: MagicMock) -> None:
-        output = tmp_path / "test.raw"
+    def test_raw_clips_positive_one_without_wraparound(self, tmp_path: Path) -> None:
+        out = tmp_path / "clip.raw"
+        samples = np.array([1.0 + 1.0j, -1.0 - 1.0j, 0.0 + 0.0j], dtype=np.complex64)
+        with IQRecorder(out, format="raw", sample_rate=2.048e6, center_freq=98e6) as rec:
+            rec.write_samples(samples)
 
-        # Simulate 2048 samples per read
-        mock_rtlsdr.read_samples.side_effect = _cycling_side_effect(
-            [
-                np.ones(2048, dtype=np.complex64) * 0.5,
-                np.ones(2048, dtype=np.complex64) * 0.5,
-            ]
-        )
+        raw = np.frombuffer(out.read_bytes(), dtype=np.uint8)
+        assert list(raw[:2]) == [255, 255]  # must NOT wrap to 0!
+        assert list(raw[2:4]) == [0, 0]
 
-        with IQRecorder(output, format="raw") as rec:
-            rec.record(mock_rtlsdr, duration=0.1)
+    def test_numpy_archive_stores_metadata(self, tmp_path: Path) -> None:
+        out = tmp_path / "cap.npz"
+        src = SimulatedSource(center_freq=433.92e6, sample_rate=1.024e6, gain=29.7, realtime=False)
+        with src, IQRecorder(out, format="numpy") as rec:
+            written = rec.record(src, duration=0.02, chunk_size=2048)
+            assert written > 0
 
-        assert output.exists()
-        assert output.stat().st_size > 0
-
-    def test_numpy_recording(self, tmp_path: Path, mock_rtlsdr: MagicMock) -> None:
-        output = tmp_path / "test.npz"
-
-        mock_rtlsdr.read_samples.side_effect = _cycling_side_effect(
-            [
-                np.ones(2048, dtype=np.complex64) * 0.3,
-            ]
-        )
-
-        with IQRecorder(output, format="numpy") as rec:
-            rec.record(mock_rtlsdr, duration=0.1)
-
-        assert output.exists()
-        data = np.load(output)
-        assert "iq" in data
-        assert len(data["iq"]) == 2048
-
-    def test_empty_recording(self, tmp_path: Path, mock_rtlsdr: MagicMock) -> None:
-        output = tmp_path / "empty.npz"
-        mock_rtlsdr.read_samples.return_value = None
-
-        with IQRecorder(output, format="numpy") as rec:
-            rec.record(mock_rtlsdr, duration=0.1)
-
-        # Should not crash even with no samples
-        assert output.exists() or True  # may not create file if empty
+        with np.load(out) as data:
+            assert "iq" in data
+            assert float(data["center_freq"]) == 433.92e6
+            assert float(data["sample_rate"]) == 1.024e6
+            assert float(data["gain"]) == 29.7

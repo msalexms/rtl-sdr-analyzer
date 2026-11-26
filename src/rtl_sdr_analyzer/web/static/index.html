@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>rtl-sdr-analyzer · AMSTech</title>
+  <link rel="icon" href="/static/amstech-ui/logo/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/amstech-ui/fuentes.css">
+  <link rel="stylesheet" href="/static/amstech-ui/tokens.css">
+  <link rel="stylesheet" href="/static/amstech-ui/componentes.css">
+  <link rel="stylesheet" href="/static/css/studio.css">
+  <script src="/static/js/theme-init.js"></script>
+</head>
+<body class="ams">
+  <div class="studio-shell">
+    <header class="ams-cabecera studio-header">
+      <a class="ams-marca" href="#live" id="brand-home">
+        <img class="thor-mark thor-light" src="/static/amstech-ui/logo/thor.svg" alt="AMSTech Thor" width="28" height="28">
+        <img class="thor-mark thor-dark" src="/static/amstech-ui/logo/thor-noche.svg" alt="" width="28" height="28">
+        <span>rtl-sdr-analyzer</span>
+        <small>amstech</small>
+      </a>
+      <img class="header-sticker" src="/static/img/logo.svg" alt="" width="32" height="28">
+
+      <nav class="ams-pestanas" aria-label="Views">
+        <a href="#live" class="tab-link" data-tab="live" aria-current="page" data-i18n="tab_live">Live</a>
+        <a href="#sweep" class="tab-link" data-tab="sweep" data-i18n="tab_sweep">Sweep</a>
+        <a href="#events" class="tab-link" data-tab="events"><span data-i18n="tab_events">Events</span> <span class="n" id="nav-events-count" aria-label="events">0</span></a>
+      </nav>
+
+      <div class="header-right">
+        <button type="button" class="ams-btn ams-btn--peq status-btn" id="btn-open-source" title="Select RF source">
+          <i class="status-dot" id="source-dot"></i>
+          <span id="source-label">Connecting…</span>
+          <span class="btn-caret" aria-hidden="true">▾</span>
+        </button>
+        <button type="button" class="ams-btn ams-btn--peq ams-btn--icono-sm" id="btn-open-settings" title="Settings" aria-label="Settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2.2"/><circle cx="10" cy="17" r="2.2"/>
+          </svg>
+        </button>
+        <button type="button" class="ams-btn ams-btn--peq ams-mono" id="btn-lang" title="Switch language">ES</button>
+        <button type="button" class="ams-btn ams-btn--peq ams-btn--icono-sm" id="btn-theme" title="Toggle theme" aria-label="Toggle theme">
+          <span id="theme-icon">◐</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="studio-main">
+      <!-- ==================== LIVE TAB ==================== -->
+      <section class="tab-panel" id="panel-live">
+        <div class="studio-layout">
+          <!-- Left: Scope + Unified 4-metric Strip + Actions -->
+          <div class="scope-column">
+            <div class="window">
+              <div class="window-bar">
+                <div class="window-meta">
+                  <span class="ams-punto" id="live-dot"></span>
+                  <span class="window-status" id="live-badge" role="status">CONNECTING</span>
+                  <span class="ams-mono window-sep" aria-hidden="true">·</span>
+                  <span class="ams-mono window-span" id="span-pill">±1.02 MHz</span>
+                </div>
+                <span class="ams-mono window-rate" id="rec-status-line">0.0 fps</span>
+              </div>
+
+              <div class="scope-screen">
+                <div class="spectrum-wrap">
+                  <canvas id="spectrum-canvas"></canvas>
+                  <div class="scope-hover-badge ams-mono" id="scope-hover" hidden></div>
+                  <div class="scope-pan-badge ams-mono" id="scope-pan-badge" hidden></div>
+                  <div class="scope-hint ams-mono" id="scope-hint" data-i18n="scope_hint">Click to tune · drag to pan · wheel to step</div>
+                </div>
+                <div class="waterfall-wrap">
+                  <canvas id="waterfall-canvas"></canvas>
+                  <div class="waterfall-cursor" id="waterfall-cursor" hidden></div>
+                </div>
+              </div>
+            </div>
+
+            <dl class="ams-cajetin live-metrics" style="--cols:4">
+              <div><dt data-i18n="tel_peak_freq">Peak</dt><dd class="ams-num" id="tel-peak-freq">—</dd></div>
+              <div><dt data-i18n="tel_peak_power">Power</dt><dd class="ams-num" id="tel-peak-power">—</dd></div>
+              <div><dt data-i18n="tel_noise">Noise</dt><dd class="ams-num" id="tel-noise">—</dd></div>
+              <div><dt data-i18n="tel_snr">SNR</dt><dd class="ams-num" id="tel-snr">—</dd></div>
+            </dl>
+
+            <div class="scope-actions">
+              <button type="button" class="ams-btn ams-btn--peq" id="btn-pause" title="Space" aria-pressed="false">
+                <span id="pause-label" data-i18n="btn_pause">Pause</span>
+              </button>
+              <button type="button" class="ams-btn ams-btn--peq" id="btn-peak-hold" aria-pressed="false" title="P" data-i18n="btn_peak_hold">Peak Hold</button>
+              <button type="button" class="ams-btn ams-btn--peq" id="btn-reset-peak" hidden data-i18n="btn_reset_peak">Reset</button>
+              <button type="button" class="ams-btn ams-btn--peq" id="btn-autorange" title="A" data-i18n="btn_autorange">Auto Scale</button>
+              <button type="button" class="ams-btn ams-btn--peq rec-push" id="btn-record" title="R" aria-pressed="false">
+                <span class="rec-dot" id="rec-dot"></span>
+                <span id="rec-label" data-i18n="btn_record">Record IQ</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Right: Clean Minimal Control Rail -->
+          <aside class="control-panel">
+            <!-- TUNING -->
+            <div class="control-section first-section">
+              <span class="ams-rotulo section-title" data-i18n="sec_tuning">Tuning</span>
+              <div class="ams-group">
+                <div class="tuner-bar">
+                  <button type="button" class="tuner-step" id="btn-freq-down-big" title="-1 MHz">«</button>
+                  <button type="button" class="tuner-step" id="btn-freq-down" title="-100 kHz">‹</button>
+                  <div class="freq-display">
+                    <input class="ams-mono" id="input-freq-mhz" type="text" inputmode="decimal" value="98.000" aria-label="Center frequency in MHz">
+                    <span class="ams-mono freq-unit">MHz</span>
+                  </div>
+                  <button type="button" class="tuner-step" id="btn-freq-up" title="+100 kHz">›</button>
+                  <button type="button" class="tuner-step" id="btn-freq-up-big" title="+1 MHz">»</button>
+                </div>
+                <div class="preset-grid" id="preset-grid">
+                  <button type="button" class="preset-btn" data-freq="98.0">FM 98</button>
+                  <button type="button" class="preset-btn" data-freq="121.5">Air 121.5</button>
+                  <button type="button" class="preset-btn" data-freq="433.92">433.9</button>
+                  <button type="button" class="preset-btn" data-freq="446.006">PMR 446</button>
+                  <button type="button" class="preset-btn" data-freq="868.3">868.3</button>
+                  <button type="button" class="preset-btn" data-freq="1090.0">ADS-B</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- RADIO -->
+            <div class="control-section">
+              <span class="ams-rotulo section-title" data-i18n="sec_radio">Radio</span>
+              <div class="ams-group">
+                <div class="ctrl-row">
+                  <span class="ctrl-label" data-i18n="lbl_sample_rate">Rate</span>
+                  <div class="ams-segmentos compact-segments" id="seg-sample-rate">
+                    <label><input type="radio" name="sample_rate" value="1024000"><span>1.024</span></label>
+                    <label><input type="radio" name="sample_rate" value="2048000" checked><span>2.048</span></label>
+                    <label><input type="radio" name="sample_rate" value="2400000"><span>2.400</span></label>
+                  </div>
+                </div>
+                <div class="ctrl-slider-block">
+                  <div class="ctrl-slider-head">
+                    <span class="ctrl-label" data-i18n="lbl_gain">Gain</span>
+                    <span class="ams-mono ctrl-val" id="val-gain">Auto</span>
+                    <label class="inline-switch">
+                      <span class="small-label" data-i18n="lbl_auto_gain">Auto</span>
+                      <span class="ams-interruptor ams-interruptor--sm">
+                        <input type="checkbox" id="chk-auto-gain" checked>
+                        <i></i>
+                      </span>
+                    </label>
+                  </div>
+                  <input class="ams-rango" type="range" id="range-gain" min="0" max="49.6" step="0.1" value="29.7" disabled>
+                </div>
+              </div>
+            </div>
+
+            <!-- DETECTOR -->
+            <div class="control-section">
+              <div class="section-head">
+                <span class="ams-rotulo section-title" data-i18n="sec_detector">Detector</span>
+                <label class="ams-interruptor ams-interruptor--sm" title="Enable automatic signal detector">
+                  <input type="checkbox" id="chk-detector-enabled" checked>
+                  <i></i>
+                </label>
+              </div>
+              <div class="ams-group">
+                <div class="dual-sliders">
+                  <div class="dual-col">
+                    <div class="dual-head">
+                      <span data-i18n="lbl_thresh_short">Threshold</span>
+                      <strong class="ams-mono" id="val-power-thresh">-55 dB</strong>
+                    </div>
+                    <input class="ams-rango" type="range" id="range-power-thresh" min="-110" max="0" step="1" value="-55">
+                  </div>
+                  <div class="dual-col">
+                    <div class="dual-head">
+                      <span data-i18n="lbl_snr_short">Min SNR</span>
+                      <strong class="ams-mono" id="val-snr-thresh">10 dB</strong>
+                    </div>
+                    <input class="ams-rango" type="range" id="range-snr-thresh" min="3" max="40" step="1" value="10">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SIGNALS -->
+            <div class="control-section signals-section">
+              <div class="section-head">
+                <span class="ams-rotulo section-title" id="signals-heading" data-i18n="sec_signals">Signals</span>
+                <button type="button" class="text-link" id="btn-view-all-events" data-i18n="btn_view_all">All →</button>
+              </div>
+              <div class="ams-group signals-box">
+                <div id="recent-events-list" class="mini-events">
+                  <p class="ams-gris small-empty" data-i18n="empty_events">Listening…</p>
+                </div>
+                <div id="recordings-box" class="recordings-box" hidden>
+                  <span class="ams-rotulo" data-i18n="lbl_recordings">Recordings</span>
+                  <div id="recordings-list" class="recordings-list"></div>
+                </div>
+              </div>
+            </div>
+
+            <footer class="panel-footer">
+              <span>rtl-sdr-analyzer</span>
+              <a href="https://amstech.dev" target="_blank" rel="noreferrer">amstech.dev</a>
+            </footer>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ==================== SWEEP TAB ==================== -->
+      <section class="tab-panel" id="panel-sweep" hidden>
+        <div class="ams-caja sweep-toolbar-card">
+          <div class="sweep-top-bar">
+            <div class="sweep-inputs">
+              <label class="ams-campo sweep-field">
+                <span data-i18n="sweep_start">Start (MHz)</span>
+                <input class="ams-entrada ams-mono" id="sweep-start-mhz" type="number" step="0.1" value="88.0">
+              </label>
+              <label class="ams-campo sweep-field">
+                <span data-i18n="sweep_end">End (MHz)</span>
+                <input class="ams-entrada ams-mono" id="sweep-end-mhz" type="number" step="0.1" value="108.0">
+              </label>
+              <label class="ams-campo sweep-field sweep-field--sm">
+                <span data-i18n="sweep_dwell">Dwell (s)</span>
+                <input class="ams-entrada ams-mono" id="sweep-dwell" type="number" step="0.05" min="0.05" max="10" value="0.30">
+              </label>
+            </div>
+
+            <div class="sweep-presets">
+              <button type="button" class="ams-btn ams-btn--peq sweep-preset" data-start="88" data-end="108">FM 88–108</button>
+              <button type="button" class="ams-btn ams-btn--peq sweep-preset" data-start="118" data-end="137">Air</button>
+              <button type="button" class="ams-btn ams-btn--peq sweep-preset" data-start="430" data-end="440">433</button>
+              <button type="button" class="ams-btn ams-btn--peq sweep-preset" data-start="445" data-end="447">PMR</button>
+              <button type="button" class="ams-btn ams-btn--peq sweep-preset" data-start="863" data-end="870">868</button>
+            </div>
+
+            <div class="sweep-btn-col">
+              <button type="button" class="ams-btn ams-btn--peq ams-btn--principal" id="btn-sweep-start" data-i18n="btn_sweep_start">Start Sweep</button>
+              <button type="button" class="ams-btn ams-btn--peq ams-btn--peligro" id="btn-sweep-cancel" hidden data-i18n="btn_cancel">Cancel</button>
+            </div>
+          </div>
+
+          <div class="sweep-progress-wrap" id="sweep-progress-wrap" hidden>
+            <div class="sweep-progress-bar">
+              <div class="sweep-progress-fill" id="sweep-progress-fill"></div>
+            </div>
+            <span class="ams-mono" id="sweep-progress-text">0%</span>
+          </div>
+
+          <div class="ams-aviso sweep-error-banner" id="sweep-error-banner" hidden>
+            <div>
+              <b id="sweep-error-title" data-i18n="sweep_error_title">Sweep error</b>
+              <p id="sweep-error-text"></p>
+            </div>
+            <button type="button" class="ams-btn ams-btn--peq" id="btn-sweep-error-close" data-i18n-aria="aria_close">✕</button>
+          </div>
+        </div>
+
+        <div class="sweep-layout">
+          <div class="window sweep-scope-card">
+            <div class="window-bar">
+              <span class="ams-rotulo" data-i18n="sweep_spectrum_title">Wideband Spectrum</span>
+              <span class="ams-mono window-rate" id="sweep-summary-pill">—</span>
+            </div>
+            <div class="sweep-screen">
+              <canvas id="sweep-canvas"></canvas>
+              <div class="scope-hover-badge ams-mono" id="sweep-hover" hidden></div>
+            </div>
+          </div>
+
+          <div class="ams-caja sweep-peaks-card">
+            <div class="card-head">
+              <h2 class="ams-h3" data-i18n="sweep_peaks_title">Peaks</h2>
+              <span class="ams-gris small-note" data-i18n="click_to_tune">Click to tune</span>
+            </div>
+            <div class="table-scroll">
+              <table class="ams-tabla">
+                <thead>
+                  <tr>
+                    <th data-i18n="col_freq">MHz</th>
+                    <th data-i18n="col_power">dBFS</th>
+                    <th data-i18n="col_snr">SNR</th>
+                  </tr>
+                </thead>
+                <tbody id="sweep-peaks-tbody">
+                  <tr><td colspan="3" class="ams-gris" data-i18n="sweep_empty">Run a sweep to scan across bands.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== EVENTS TAB ==================== -->
+      <section class="tab-panel" id="panel-events" hidden>
+        <div class="events-top-row">
+          <dl class="ams-cajetin events-cajetin" style="--cols:4">
+            <div><dt data-i18n="stat_total">Detections</dt><dd class="ams-num" id="ev-stat-total">0</dd></div>
+            <div><dt data-i18n="stat_frames">Frames</dt><dd class="ams-num" id="ev-stat-frames">0</dd></div>
+            <div><dt data-i18n="stat_rate">Rate</dt><dd class="ams-num" id="ev-stat-rate">0%</dd></div>
+            <div><dt data-i18n="stat_peak">Peak</dt><dd class="ams-num" id="ev-stat-peak">—</dd></div>
+          </dl>
+          <div class="events-actions">
+            <a class="ams-btn ams-btn--peq" href="/api/events/export?format=csv" data-i18n="btn_export_csv">CSV</a>
+            <a class="ams-btn ams-btn--peq" href="/api/events/export?format=json" data-i18n="btn_export_json">JSONL</a>
+            <button type="button" class="ams-btn ams-btn--peq ams-btn--peligro" id="btn-clear-events" data-i18n="btn_clear">Clear</button>
+          </div>
+        </div>
+
+        <div class="events-layout">
+          <div class="ams-caja events-table-card">
+            <div class="card-head">
+              <h2 class="ams-h3" data-i18n="sec_top_freqs">Top Frequencies</h2>
+            </div>
+            <div class="table-scroll">
+              <table class="ams-tabla">
+                <thead>
+                  <tr>
+                    <th data-i18n="col_freq">MHz</th>
+                    <th data-i18n="col_count">Count</th>
+                    <th data-i18n="col_avg_power">Avg</th>
+                    <th data-i18n="col_max_power">Peak</th>
+                  </tr>
+                </thead>
+                <tbody id="top-freqs-tbody">
+                  <tr><td colspan="4" class="ams-gris" data-i18n="empty_history">No detections yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="ams-caja events-table-card">
+            <div class="card-head">
+              <h2 class="ams-h3" data-i18n="sec_event_log">Log</h2>
+              <span class="ams-gris small-note" data-i18n="click_to_tune">Click to tune</span>
+            </div>
+            <div class="table-scroll">
+              <table class="ams-tabla">
+                <thead>
+                  <tr>
+                    <th data-i18n="col_time">Time</th>
+                    <th data-i18n="col_freq">MHz</th>
+                    <th data-i18n="col_power">Power</th>
+                    <th data-i18n="col_snr">SNR</th>
+                    <th data-i18n="col_bw">kHz</th>
+                    <th data-i18n="col_dur">Dur</th>
+                  </tr>
+                </thead>
+                <tbody id="events-tbody">
+                  <tr><td colspan="6" class="ams-gris" data-i18n="empty_history">No detections yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ==================== SOURCE MODAL ==================== -->
+  <dialog class="ams-dialogo" id="source-dialog">
+    <div class="dialog-head">
+      <div>
+        <span class="ams-rotulo" data-i18n="dlg_kicker">RF Input</span>
+        <h2 class="ams-h2" data-i18n="dlg_title">Select Signal Source</h2>
+      </div>
+      <button type="button" class="ams-btn ams-btn--peq" id="btn-close-source" data-i18n-aria="aria_close">✕</button>
+    </div>
+
+    <div class="dialog-body">
+      <div class="ams-caja ams-caja--plana dialog-section">
+        <div class="row-between">
+          <h3 class="ams-h3" data-i18n="dlg_usb_devices">Local USB RTL-SDR</h3>
+          <button type="button" class="ams-btn ams-btn--peq" id="btn-scan-usb" data-i18n="btn_scan">Scan USB</button>
+        </div>
+        <div id="usb-devices-list" class="usb-list"></div>
+      </div>
+
+      <div class="ams-caja ams-caja--plana dialog-section">
+        <h3 class="ams-h3" data-i18n="dlg_tcp_title">RTL-TCP Server</h3>
+        <div class="tcp-form">
+          <label class="ams-campo">
+            <span data-i18n="lbl_host">Host</span>
+            <input class="ams-entrada ams-mono" id="input-tcp-host" type="text" value="127.0.0.1">
+          </label>
+          <label class="ams-campo">
+            <span data-i18n="lbl_port">Port</span>
+            <input class="ams-entrada ams-mono" id="input-tcp-port" type="number" min="1" max="65535" value="1234">
+          </label>
+          <button type="button" class="ams-btn ams-btn--principal" id="btn-connect-tcp" data-i18n="btn_connect">Connect</button>
+        </div>
+      </div>
+
+      <div class="ams-caja ams-caja--plana dialog-section">
+        <div class="row-between">
+          <div>
+            <h3 class="ams-h3" data-i18n="dlg_sim_title">Simulated RF Demo</h3>
+            <p class="ams-gris small-note" data-i18n="dlg_sim_desc">Virtual FM, Airband, ISM 433/868/915, PMR446 and ADS-B carriers without hardware.</p>
+          </div>
+          <button type="button" class="ams-btn ams-btn--amarillo" id="btn-connect-sim" data-i18n="btn_use_demo">Use Demo RF</button>
+        </div>
+      </div>
+
+      <p class="ams-mal small-note" id="source-dialog-error" role="alert" hidden></p>
+    </div>
+  </dialog>
+
+  <!-- ==================== SETTINGS MODAL ==================== -->
+  <dialog class="ams-dialogo" id="settings-dialog">
+    <div class="dialog-head">
+      <div>
+        <span class="ams-rotulo" data-i18n="dlg_settings_kicker">DSP &amp; Detector</span>
+        <h2 class="ams-h2" data-i18n="dlg_settings_title">Settings</h2>
+      </div>
+      <button type="button" class="ams-btn ams-btn--peq" id="btn-close-settings" data-i18n-aria="aria_close">✕</button>
+    </div>
+
+    <div class="settings-columns">
+      <div class="settings-col">
+        <span class="ams-rotulo section-title" data-i18n="sec_dsp">DSP &amp; Display</span>
+        <div class="ams-group settings-group">
+          <div class="ctrl-row ctrl-row--col">
+            <span class="ctrl-label" data-i18n="lbl_fft_size">FFT Bins</span>
+            <div class="ams-segmentos full-segments" id="seg-fft-size">
+              <label><input type="radio" name="fft_size" value="1024"><span>1024</span></label>
+              <label><input type="radio" name="fft_size" value="2048" checked><span>2048</span></label>
+              <label><input type="radio" name="fft_size" value="4096"><span>4096</span></label>
+              <label><input type="radio" name="fft_size" value="8192"><span>8192</span></label>
+            </div>
+          </div>
+
+          <div class="ctrl-row">
+            <span class="ctrl-label" data-i18n="lbl_averaging">Averaging</span>
+            <div class="ams-select compact-select">
+              <select id="select-averaging">
+                <option value="1">1×</option>
+                <option value="2">2×</option>
+                <option value="4" selected>4×</option>
+                <option value="8">8×</option>
+                <option value="16">16×</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="ctrl-row">
+            <span class="ctrl-label" data-i18n="lbl_window">Window</span>
+            <div class="ams-select compact-select">
+              <select id="select-window">
+                <option value="blackmanharris" selected>Blackman-Harris</option>
+                <option value="hann">Hann</option>
+                <option value="hamming">Hamming</option>
+                <option value="rectangular">Rectangular</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="ctrl-row">
+            <span class="ctrl-label" data-i18n="lbl_colormap">Waterfall</span>
+            <div class="ams-select compact-select">
+              <select id="select-colormap">
+                <option value="amstech">AMSTech</option>
+                <option value="viridis">Viridis</option>
+                <option value="inferno">Inferno</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="ctrl-row">
+            <span class="ctrl-label" data-i18n="lbl_remove_dc">Remove DC Spike</span>
+            <label class="ams-interruptor ams-interruptor--sm">
+              <input type="checkbox" id="chk-remove-dc" checked>
+              <i></i>
+            </label>
+          </div>
+
+          <div class="ctrl-row">
+            <span class="ctrl-label" data-i18n="lbl_ppm">PPM Correction</span>
+            <input class="ams-entrada ams-mono compact-num" type="number" id="input-ppm" min="-500" max="500" step="1" value="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-col">
+        <span class="ams-rotulo section-title" data-i18n="sec_det_adv">Detector Tuning</span>
+        <div class="ams-group settings-group">
+          <div class="ctrl-row">
+            <span class="ctrl-label" data-i18n="lbl_bw_khz">Min BW (kHz)</span>
+            <input class="ams-entrada ams-mono compact-num" type="number" id="input-bw-khz" min="0" step="1" value="5">
+          </div>
+
+          <div class="ctrl-row">
+            <span class="ctrl-label" data-i18n="lbl_min_dur">Min Dur (s)</span>
+            <input class="ams-entrada ams-mono compact-num" type="number" id="input-min-dur" min="0" step="0.1" value="0.2">
+          </div>
+
+          <div class="ctrl-row">
+            <span class="ctrl-label" data-i18n="lbl_holdover">Holdover (s)</span>
+            <input class="ams-entrada ams-mono compact-num" type="number" id="input-holdover" min="0" step="0.1" value="0.5">
+          </div>
+
+          <div class="ctrl-row">
+            <span class="ctrl-label" data-i18n="lbl_cooldown">Cooldown (s)</span>
+            <input class="ams-entrada ams-mono compact-num" type="number" id="input-cooldown" min="0" step="0.5" value="2.0">
+          </div>
+        </div>
+
+        <p class="ams-gris small-note settings-note" data-i18n="settings_tip">
+          Shortcuts: Space pause · P peak hold · R record IQ · Wheel step frequency · Drag coral THR line on spectrum.
+        </p>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="ams-aviso-flotante" id="studio-toast" role="status" aria-live="polite" hidden></div>
+
+  <script type="module" src="/static/js/main.js"></script>
+</body>
+</html>

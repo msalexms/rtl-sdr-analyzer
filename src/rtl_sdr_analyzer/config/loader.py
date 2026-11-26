@@ -15,40 +15,37 @@ def load_settings(
 ) -> Settings:
     """Load and merge configuration sources.
 
-    Priority (lowest → highest):
+    Precedence (lowest -> highest):
         1. Default field values
         2. YAML configuration file
-        3. Environment variables (RTL_SDR__*)
+        3. Environment variables (RTL_SDR__SECTION__FIELD)
         4. CLI override dictionary
 
     Args:
-        config_path: Path to a YAML configuration file.
+        config_path: Optional path to a YAML configuration file. If explicitly
+            supplied and missing, raises :class:`FileNotFoundError`.
         cli_overrides: Flat dictionary of dot-notation keys and values
-            from CLI arguments, e.g. {"receiver.frequency": 98e6}.
+            from CLI arguments, e.g. ``{"receiver.frequency": 98e6}``.
 
     Returns:
-        Validated Settings instance.
+        Validated :class:`Settings` instance.
     """
-    # 1. Load YAML file if provided
     yaml_data: dict[str, Any] = {}
-    if config_path:
+    if config_path is not None:
         path = Path(config_path)
-        if path.exists():
-            with open(path, encoding="utf-8") as f:
-                loaded = yaml.safe_load(f)
-                if isinstance(loaded, dict):
-                    yaml_data = loaded
+        if not path.exists():
+            raise FileNotFoundError(f"Configuration file not found: {path}")
+        with open(path, encoding="utf-8") as f:
+            loaded = yaml.safe_load(f)
+            if isinstance(loaded, dict):
+                yaml_data = loaded
 
-    # 2. Read environment variables (RTL_SDR__SECTION__FIELD)
     env_overrides = _read_env_overrides()
     if env_overrides:
         _deep_update(yaml_data, env_overrides)
 
-    # 3. Create settings — pydantic-settings may also read env vars, but we
-    #    explicitly inject them above to guarantee nested merging works.
     settings = Settings(**yaml_data)
 
-    # 4. Apply CLI overrides (highest priority)
     if cli_overrides:
         current = settings.model_dump()
         for dot_key, value in cli_overrides.items():
@@ -60,46 +57,47 @@ def load_settings(
 
 
 def _read_env_overrides() -> dict[str, Any]:
-    """Parse RTL_SDR__* environment variables into a nested dict."""
+    """Parse ``RTL_SDR__*`` environment variables into a nested dictionary."""
     overrides: dict[str, Any] = {}
     prefix = "RTL_SDR__"
     for key, value in os.environ.items():
         if not key.startswith(prefix):
             continue
-        path = key[len(prefix) :].lower().split("__")
+        path = [part for part in key[len(prefix) :].lower().split("__") if part]
+        if not path:
+            continue
         _set_nested(overrides, path, _coerce_env_value(value))
     return overrides
 
 
 def _coerce_env_value(value: str) -> Any:
-    """Convert string env values to int/float/bool when possible."""
-    lowered = value.lower()
-    if lowered in ("true", "1", "yes"):
+    """Coerce explicit boolean/null strings while preserving numbers for Pydantic."""
+    stripped = value.strip()
+    lowered = stripped.lower()
+    if lowered == "true":
         return True
-    if lowered in ("false", "0", "no"):
+    if lowered == "false":
         return False
-    try:
-        return int(value)
-    except ValueError:
-        pass
-    try:
-        return float(value)
-    except ValueError:
-        pass
-    return value
+    if lowered in ("none", "null", ""):
+        return None
+    return stripped
 
 
 def _set_nested(data: dict[str, Any], keys: list[str], value: Any) -> None:
     """Set a nested dictionary value by key path."""
     for key in keys[:-1]:
-        data = data.setdefault(key, {})
+        node = data.get(key)
+        if not isinstance(node, dict):
+            node = {}
+            data[key] = node
+        data = node
     data[keys[-1]] = value
 
 
 def _deep_update(base: dict[str, Any], overrides: dict[str, Any]) -> None:
     """Recursively merge overrides into base."""
     for key, value in overrides.items():
-        if isinstance(value, dict) and key in base and isinstance(base[key], dict):
+        if isinstance(value, dict) and isinstance(base.get(key), dict):
             _deep_update(base[key], value)
         else:
             base[key] = value

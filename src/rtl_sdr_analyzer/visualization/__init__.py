@@ -1,9 +1,5 @@
-from .headless import HeadlessVisualization
-from .plotter import MatplotlibVisualization
-from .strategy import VisualizationStrategy
+"""Console (headless) runner for the spectrum engine."""
 
-__all__ = [
-    "HeadlessVisualization",
-    "MatplotlibVisualization",
-    "VisualizationStrategy",
-]
+from .headless import HeadlessRunner
+
+__all__ = ["HeadlessRunner"]
