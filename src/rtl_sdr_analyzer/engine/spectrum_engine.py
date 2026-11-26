@@ -29,6 +29,7 @@ from rtl_sdr_analyzer.sources.base import (
     SDRSourceError,
 )
 from rtl_sdr_analyzer.sources.factory import create_source
+from rtl_sdr_analyzer.sources.replay import FileReplaySource
 from rtl_sdr_analyzer.storage.database import EventStore
 
 logger = logging.getLogger(__name__)
@@ -37,8 +38,9 @@ EngineState = Literal["idle", "running", "paused", "sweeping", "disconnected", "
 FrameCallback = Callable[[SpectrumFrame], None]
 StatusCallback = Callable[[dict[str, Any]], None]
 _UNSET: Any = object()
-# Sources that deliver samples in real time and must be read continuously.
-_STREAMING = frozenset({"usb", "rtl_tcp"})
+# Sources that deliver samples in real time and must be read continuously
+# (file replay is paced to its sample rate, so it plays at 1x speed).
+_STREAMING = frozenset({"usb", "rtl_tcp", "file"})
 _MAX_READ_SAMPLES = 1 << 20
 
 
@@ -104,6 +106,7 @@ class SpectrumEngine:
         self._paused = False
         self._paused_for_exclusive = False
         self._stop_event = threading.Event()
+        self._step_event = threading.Event()
         self._io_lock = threading.RLock()
         self._proc_lock = threading.RLock()
         self._rec_lock = threading.Lock()
@@ -532,6 +535,8 @@ class SpectrumEngine:
             "display": self.settings.display.model_dump(),
             "stats": self.detector.stats.model_dump(),
             "recording": rec_summary,
+            "replay_file": self._replay_filename(),
+            "replay": self.replay_summary(),
             "fps": round(self._fps, 1),
             "frames_total": self._seq,
             "last_error": self._last_error,
@@ -553,6 +558,106 @@ class SpectrumEngine:
 
     def get_recent_memory_events(self, limit: int = 50) -> list[dict[str, Any]]:
         return [e.model_dump(mode="json") for e in list(self._recent_events)[:limit]]
+
+    # ------------------------------------------------------------------
+    # Replay transport
+    # ------------------------------------------------------------------
+
+    def _replay_source(self) -> FileReplaySource:
+        src = self._source
+        if not isinstance(src, FileReplaySource) or not src.is_open:
+            raise ValueError("Transport controls are only available while replaying a recording")
+        return src
+
+    def _frame_samples(self, sample_rate: float) -> int:
+        fft_size = self.settings.receiver.fft_size
+        fft_samples = max(fft_size, min(fft_size * self.settings.dsp.averaging, 32768))
+        return max(fft_samples, min(int(sample_rate / self._target_fps()), _MAX_READ_SAMPLES))
+
+    def replay_summary(self) -> dict[str, Any] | None:
+        """Position/length/speed of the active replay, or ``None`` when not replaying."""
+        src = self._source
+        if not isinstance(src, FileReplaySource) or not src.is_open or src.total_samples == 0:
+            return None
+        sr = max(src.sample_rate, 1.0)
+        frame = self._frame_samples(sr)
+        frame_count = max(1, -(-src.total_samples // frame))  # ceil
+        # The cursor sits at the end of the frame on screen, so that frame is (cursor - 1) // F.
+        current = ((src.position_samples - 1) // frame) % frame_count
+        return {
+            "filename": src.file_path.name,
+            "position_s": round(src.position_samples / sr, 3),
+            "duration_s": round(src.total_samples / sr, 3),
+            "speed": src.speed,
+            "frame_s": round(frame / sr, 4),
+            "frame": int(current),
+            "frame_count": int(frame_count),
+        }
+
+    def replay_seek(self, position_s: float) -> None:
+        """Jump to ``position_s`` seconds; if paused, render the frame at that position."""
+        with self._io_lock:
+            src = self._replay_source()
+            src.seek(int(max(0.0, position_s) * src.sample_rate))
+        with self._proc_lock:
+            self.processor.reset()
+        if self._paused:
+            self._step_event.set()
+        self._emit_status()
+
+    def replay_seek_frame(self, frame_index: int) -> None:
+        """Pause and show frame ``frame_index`` (0-based, wraps around the file)."""
+        with self._io_lock:
+            src = self._replay_source()
+            frame = self._frame_samples(src.sample_rate)
+            frame_count = max(1, -(-src.total_samples // frame))
+            src.seek((int(frame_index) % frame_count) * frame)
+        self._paused = True
+        if self._state == "running":
+            self._state = "paused"
+        with self._proc_lock:
+            self.processor.reset()
+        self._step_event.set()
+        self._emit_status()
+
+    def replay_set_speed(self, speed: float) -> None:
+        with self._io_lock:
+            try:
+                self._replay_source().set_speed(speed)
+            except SDRSourceError as exc:
+                raise ValueError(str(exc)) from exc
+        self._emit_status()
+
+    def step_frame(self, direction: int = 1) -> None:
+        """Pause and render exactly one frame forward (``1``) or backward (``-1``)."""
+        with self._io_lock:
+            src = self._replay_source()
+            if direction < 0:
+                # The current frame ends at the cursor: go back two frames, render one.
+                frame = self._frame_samples(src.sample_rate)
+                src.seek(src.position_samples - 2 * frame)
+        self._paused = True
+        if self._state == "running":
+            self._state = "paused"
+        with self._proc_lock:
+            self.processor.reset()  # show the exact frame, not an average with the last one
+        self._step_event.set()
+        self._emit_status()
+
+    def _replay_filename(self) -> str | None:
+        replay_path = getattr(self._source, "file_path", None)
+        return Path(replay_path).name if replay_path is not None else None
+
+    def protected_paths(self) -> set[Path]:
+        """Files in use (active recording or replay) that must not be deleted."""
+        paths: set[Path] = set()
+        rec = self.recording_summary()
+        if rec is not None:
+            paths.add(Path(rec["path"]).resolve())
+        replay_path = getattr(self._source, "file_path", None)
+        if self._source is not None and self._source.is_open and replay_path is not None:
+            paths.add(Path(replay_path).resolve())
+        return paths
 
     def clear_recent_events(self) -> None:
         self._recent_events.clear()
@@ -597,9 +702,11 @@ class SpectrumEngine:
         fps_frames = 0
 
         while not self._stop_event.is_set():
-            if self._paused or self._paused_for_exclusive:
+            stepping = self._paused and self._step_event.is_set()
+            if self._paused_for_exclusive or (self._paused and not stepping):
                 self._stop_event.wait(0.05)
                 continue
+            self._step_event.clear()
 
             if not self._ensure_source_open():
                 self._stop_event.wait(1.0)
@@ -608,7 +715,9 @@ class SpectrumEngine:
             iter_start = time.monotonic()
             try:
                 with self._io_lock:
-                    if self._paused or self._paused_for_exclusive or self._source is None:
+                    if (self._paused and not stepping) or self._paused_for_exclusive:
+                        continue
+                    if self._source is None:
                         continue
                     fft_size = self.settings.receiver.fft_size
                     avg = self.settings.dsp.averaging
@@ -617,8 +726,11 @@ class SpectrumEngine:
                     # otherwise rtl_tcp lags behind real time and IQ recordings have gaps.
                     to_read = fft_samples
                     if self._recorder is not None or self._source.source_type in _STREAMING:
-                        frame_samples = int(self._source.sample_rate / self._target_fps())
-                        to_read = max(fft_samples, min(frame_samples, _MAX_READ_SAMPLES))
+                        to_read = self._frame_samples(self._source.sample_rate)
+                        # Replay speed scales the IQ consumed per frame (fps stays constant);
+                        # single-frame steps always advance exactly one 1x frame.
+                        if isinstance(self._source, FileReplaySource) and not stepping:
+                            to_read = max(fft_samples, int(to_read * self._source.speed))
                     iq = self._source.read_samples(to_read)
                     center_freq = self._source.center_freq
                     sample_rate = self._source.sample_rate
@@ -688,7 +800,7 @@ class SpectrumEngine:
 
                 target_dt = 1.0 / self._target_fps()
                 elapsed = time.monotonic() - iter_start
-                if elapsed < target_dt:
+                if elapsed < target_dt and not stepping:
                     self._stop_event.wait(target_dt - elapsed)
 
             except (SDRDisconnectedError, SDRConnectionError) as exc:

@@ -231,3 +231,106 @@ class TestWebStudioApi:
             # DNS rebinding: attacker hostname resolving to loopback is rejected
             rebind = client.get("/api/state", headers={"Host": "evil.example:8080"})
             assert rebind.status_code == 403
+
+    def test_recordings_replay_and_delete(self, tmp_path: Path) -> None:
+        client, engine = _build_test_client(tmp_path)
+        rec_dir = Path(engine.settings.storage.recordings_dir)
+        with client:
+            name = client.post("/api/recording/start", json={"format": "raw"}).json()["filename"]
+            time.sleep(0.3)
+            client.post("/api/recording/stop")
+
+            listed = client.get("/api/recordings").json()["recordings"]
+            entry = next(r for r in listed if r["filename"] == name)
+            assert entry["center_freq_hz"] == engine.settings.receiver.frequency
+            assert entry["sample_rate_hz"] and entry["duration_s"] is not None
+
+            # Replay by name only: arbitrary paths / traversal are rejected
+            assert (
+                client.post(
+                    "/api/source", json={"mode": "file", "recording": "../x.raw"}
+                ).status_code
+                == 400
+            )
+            st = client.post("/api/source", json={"mode": "file", "recording": name}).json()
+            assert st["source_type"] == "file" and st["replay_file"] == name
+
+            # In use while replaying -> cannot delete
+            assert client.delete(f"/api/recordings/{name}").status_code == 409
+
+            client.post("/api/source", json={"mode": "simulated"})
+            res = client.delete(f"/api/recordings/{name}")
+            assert res.status_code == 200
+            assert all(r["filename"] != name for r in res.json()["recordings"])
+            assert not (rec_dir / name).exists()
+            assert not (rec_dir / f"{name}.json").exists()
+
+            # Moved/deleted outside the app -> 404, nothing else touched
+            assert client.delete(f"/api/recordings/{name}").status_code == 404
+            assert client.delete("/api/recordings/notes.txt").status_code == 400
+
+    def test_replay_transport_seek_speed_and_step(self, tmp_path: Path) -> None:
+        client, engine = _build_test_client(tmp_path)
+        with client:
+            name = client.post("/api/recording/start", json={"format": "raw"}).json()["filename"]
+            time.sleep(0.4)
+            client.post("/api/recording/stop")
+
+            # Transport is only valid while replaying
+            assert client.post("/api/stream/step", json={"direction": 1}).status_code == 409
+
+            st = client.post("/api/source", json={"mode": "file", "recording": name}).json()
+            replay = st["replay"]
+            assert replay["filename"] == name and replay["duration_s"] > 0
+
+            assert client.patch("/api/replay", json={"speed": 3.0}).status_code == 409
+            assert client.patch("/api/replay", json={"speed": 2.0}).json()["replay"]["speed"] == 2.0
+
+            client.post("/api/stream/pause")
+            seeked = client.patch("/api/replay", json={"position_s": 0.0}).json()
+            assert seeked["state"] == "paused"
+
+            # Step forward renders exactly one 1x frame while staying paused
+            time.sleep(0.2)
+            before = engine.replay_summary()
+            assert before is not None
+            frame_s = before["frame_s"]
+            step = client.post("/api/stream/step", json={"direction": 1}).json()
+            assert step["state"] == "paused"
+            time.sleep(0.3)
+            after = engine.replay_summary()
+            assert after is not None
+            assert abs((after["position_s"] - before["position_s"]) - frame_s) < 1e-3
+
+            # Step back returns one frame
+            client.post("/api/stream/step", json={"direction": -1})
+            time.sleep(0.3)
+            back = engine.replay_summary()
+            assert back is not None
+            assert abs(back["position_s"] - before["position_s"]) < 1e-3
+
+    def test_replay_frame_numbers_and_go_to_frame(self, tmp_path: Path) -> None:
+        client, engine = _build_test_client(tmp_path)
+        with client:
+            name = client.post("/api/recording/start", json={"format": "raw"}).json()["filename"]
+            time.sleep(0.4)
+            client.post("/api/recording/stop")
+            st = client.post("/api/source", json={"mode": "file", "recording": name}).json()
+            count = st["replay"]["frame_count"]
+            assert count >= 3
+
+            # Jumping to a frame pauses and shows exactly that frame
+            res = client.patch("/api/replay", json={"frame": 2}).json()
+            assert res["state"] == "paused"
+            time.sleep(0.3)
+            summary = engine.replay_summary()
+            assert summary is not None and summary["frame"] == 2
+
+            client.post("/api/stream/step", json={"direction": 1})
+            time.sleep(0.3)
+            assert engine.replay_summary()["frame"] == 3  # type: ignore[index]
+            client.post("/api/stream/step", json={"direction": -1})
+            time.sleep(0.3)
+            assert engine.replay_summary()["frame"] == 2  # type: ignore[index]
+
+            assert client.patch("/api/replay", json={"frame": -1}).status_code == 422

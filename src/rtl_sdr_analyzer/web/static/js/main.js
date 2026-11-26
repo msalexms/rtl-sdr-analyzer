@@ -42,6 +42,10 @@ const state = {
   wheelTimer: null,
   toastTimer: null,
   recentEvents: [],
+  recordings: [],
+  replay: null,
+  seeking: false,
+  inUseKey: null,
   lastLivePeaksRender: 0,
   lastEventsRefresh: 0,
   lastShownError: null,
@@ -64,6 +68,27 @@ function showToast(message, level = 'info') {
   state.toastTimer = setTimeout(() => {
     toast.hidden = true;
   }, level === 'error' ? 4500 : 2400);
+}
+
+/**
+ * In-app confirmation pop-up (replaces window.confirm). Resolves true on confirm,
+ * false on cancel, Escape or backdrop click. Focus starts on Cancel.
+ */
+function confirmDialog({ title, message, confirmLabel, danger = false }) {
+  const dlg = el('confirm-dialog');
+  el('confirm-title').textContent = title || t('confirm_title');
+  el('confirm-message').textContent = message || '';
+  el('confirm-cancel').textContent = t('confirm_cancel');
+  const ok = el('confirm-ok');
+  ok.textContent = confirmLabel || 'OK';
+  ok.classList.toggle('is-danger', danger);
+  ok.classList.toggle('ams-btn--principal', !danger);
+  dlg.returnValue = '';
+  return new Promise((resolve) => {
+    dlg.addEventListener('close', () => resolve(dlg.returnValue === 'ok'), { once: true });
+    dlg.showModal();
+    el('confirm-cancel').focus();
+  });
 }
 
 /** Run an API call that returns engine status; apply it or roll the controls back. */
@@ -183,6 +208,7 @@ function showFrequency(mhz) {
 
 /** Step the frequency; rapid steps (wheel, arrows) are coalesced into one retune. */
 function stepFrequencyMhz(deltaMhz) {
+  if (state.current?.source_type === 'file') return;
   state.wheelTargetMhz = Number(clampFreqMhz(currentFreqMhz() + deltaMhz).toFixed(4));
   showFrequency(state.wheelTargetMhz);
   clearTimeout(state.wheelTimer);
@@ -224,7 +250,7 @@ function sourceLabel(st) {
   if (st.source_type === 'usb') return `USB · ${dev.tuner && dev.tuner !== 'UNKNOWN' ? dev.tuner : 'RTL-SDR'}`;
   if (st.source_type === 'rtl_tcp') return `RTL-TCP · ${st.rtl_tcp?.host || '127.0.0.1'}`;
   if (st.source_type === 'simulated') return 'Demo RF';
-  if (st.source_type === 'file') return t('src_file');
+  if (st.source_type === 'file') return `${t('rec_replaying')} · ${st.replay_file || t('src_file')}`;
   return st.source_type || 'RF';
 }
 
@@ -288,6 +314,15 @@ function applyStateToControls(st) {
   el('btn-pause').setAttribute('aria-pressed', String(paused));
   el('pause-label').textContent = t(paused ? 'btn_resume' : 'btn_pause');
 
+  const replaying = st.source_type === 'file';
+  document.querySelector('.first-section').classList.toggle('tune-locked', replaying);
+  el('replay-note').hidden = !replaying;
+  if (replaying) el('replay-note').textContent = t('replay_locked', { name: st.replay_file || '' });
+  document.querySelectorAll('#seg-sample-rate input').forEach((inp) => {
+    inp.disabled = replaying;
+  });
+  el('btn-sweep-start').title = replaying ? t('sweep_replay_blocked') : '';
+
   if (state.wheelTargetMhz === null) showFrequency((rx.frequency || 98e6) / 1e6);
   el('span-pill').textContent = `±${((rx.sample_rate || 2.048e6) / 2e6).toFixed(2)} MHz`;
 
@@ -328,7 +363,30 @@ function applyStateToControls(st) {
   setUnlessFocused(el('input-cooldown'), det.cooldown_seconds ?? 2.0);
 
   updateRecordingUI(st.recording);
-  if (Array.isArray(st.recordings)) renderRecordingsList(st.recordings);
+  if (Array.isArray(st.recordings)) setRecordings(st.recordings);
+  syncRecordingsUsage();
+  updateReplayBar(replaying ? st.replay : null, paused);
+}
+
+/**
+ * Re-render recording rows whenever the file "in use" changes (recording or replay),
+ * so delete buttons unlock as soon as a capture stops or the source changes.
+ * A finished capture also refreshes the list to pick up its final size and metadata.
+ */
+function syncRecordingsUsage() {
+  const st = state.current || {};
+  const recording = st.recording?.filename || '';
+  const replay = st.source_type === 'file' ? st.replay_file || '' : '';
+  const key = `${recording}|${replay}`;
+  if (key === state.inUseKey) return;
+  const wasRecording = state.inUseKey?.split('|')[0];
+  state.inUseKey = key;
+  if (wasRecording && !recording) {
+    refreshRecordings();
+  } else {
+    renderRecordingsList(state.recordings);
+    if (el('source-dialog').open) renderDialogRecordings(state.recordings);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -354,22 +412,123 @@ function formatBytes(bytes) {
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
+const recordingUrl = (name) => `/api/recordings/${encodeURIComponent(name)}`;
+
+function recordingInUse(name) {
+  const st = state.current || {};
+  return st.recording?.filename === name || (st.source_type === 'file' && st.replay_file === name);
+}
+
+function recordingMeta(rec) {
+  const parts = [];
+  if (rec.center_freq_hz) parts.push(`${(rec.center_freq_hz / 1e6).toFixed(3)} MHz`);
+  if (rec.sample_rate_hz) parts.push(`${(rec.sample_rate_hz / 1e6).toFixed(3)} MSPS`);
+  if (rec.duration_s != null) parts.push(`${rec.duration_s.toFixed(1)} s`);
+  parts.push(formatBytes(rec.size_bytes));
+  return parts.join(' · ');
+}
+
+function iconButton(symbol, label, onclick, extraClass = '') {
+  return h('button', { type: 'button', class: `icon-btn ${extraClass}`, title: label, 'aria-label': label, onclick }, symbol);
+}
+
+function setRecordings(recordings) {
+  state.recordings = recordings;
+  renderRecordingsList(recordings);
+  if (el('source-dialog').open) renderDialogRecordings(recordings);
+}
+
+async function refreshRecordings() {
+  try {
+    setRecordings((await api.listRecordings()).recordings || []);
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function playRecording(name, button) {
+  await switchSource({ mode: 'file', recording: name }, button);
+  refreshRecordings();
+}
+
+async function deleteRecording(rec) {
+  if (recordingInUse(rec.filename)) {
+    showToast(t('rec_in_use'), 'error');
+    return;
+  }
+  const confirmed = await confirmDialog({
+    title: t('confirm_delete_title'),
+    message: t('confirm_delete_msg', { name: rec.filename, size: formatBytes(rec.size_bytes) }),
+    confirmLabel: t('confirm_delete_ok'),
+    danger: true,
+  });
+  if (!confirmed) return;
+  try {
+    const res = await api.deleteRecording(rec.filename);
+    setRecordings(res.recordings || []);
+    showToast(`${t('rec_deleted')}: ${rec.filename}`);
+  } catch (err) {
+    showToast(err.message, 'error');
+    refreshRecordings(); // file may have been moved or removed outside the app
+  }
+}
+
 function renderRecordingsList(recordings) {
   el('recordings-box').hidden = recordings.length === 0;
   el('recordings-list').replaceChildren(
-    ...recordings.slice(0, 3).map((rec) =>
-      h(
-        'a',
-        {
-          class: 'rec-link ams-mono',
-          href: `/api/recordings/${encodeURIComponent(rec.filename)}`,
-          download: rec.filename,
-          title: rec.filename,
-        },
-        h('span', {}, rec.filename),
-        h('span', {}, formatBytes(rec.size_bytes)),
-      ),
-    ),
+    ...recordings.slice(0, 3).map((rec) => {
+      const inUse = recordingInUse(rec.filename);
+      const del = iconButton('✕', t('rec_delete'), () => deleteRecording(rec), 'icon-btn--danger');
+      del.disabled = inUse;
+      return h(
+        'div',
+        { class: 'rec-row' },
+        h(
+          'a',
+          { class: 'rec-link ams-mono', href: recordingUrl(rec.filename), download: rec.filename, title: `${t('rec_download')} · ${rec.filename}` },
+          h('span', {}, rec.filename),
+          h('span', {}, formatBytes(rec.size_bytes)),
+        ),
+        iconButton('▶', t('rec_play'), (e) => playRecording(rec.filename, e.currentTarget)),
+        del,
+      );
+    }),
+  );
+}
+
+function renderDialogRecordings(recordings) {
+  const list = el('dialog-recordings-list');
+  if (!recordings.length) {
+    list.replaceChildren(h('p', { class: 'ams-gris small-note' }, t('rec_none')));
+    return;
+  }
+  list.replaceChildren(
+    ...recordings.map((rec) => {
+      const st = state.current || {};
+      const playing = st.source_type === 'file' && st.replay_file === rec.filename;
+      const play = h('button', { type: 'button', class: 'ams-btn ams-btn--peq ams-btn--principal' }, t(playing ? 'rec_playing' : 'rec_play'));
+      play.disabled = playing;
+      play.addEventListener('click', () => playRecording(rec.filename, play));
+      const del = iconButton('✕', t('rec_delete'), () => deleteRecording(rec), 'icon-btn--danger');
+      del.disabled = recordingInUse(rec.filename);
+      return h(
+        'div',
+        { class: `usb-item${playing ? ' is-active' : ''}` },
+        h(
+          'div',
+          { class: 'rec-item-main' },
+          h('strong', { title: rec.filename }, rec.filename),
+          h('div', { class: 'ams-mono small-note ams-gris' }, recordingMeta(rec)),
+        ),
+        h(
+          'div',
+          { class: 'rec-item-actions' },
+          play,
+          h('a', { class: 'icon-btn', href: recordingUrl(rec.filename), download: rec.filename, title: t('rec_download'), 'aria-label': t('rec_download') }, '↓'),
+          del,
+        ),
+      );
+    }),
   );
 }
 
@@ -386,6 +545,105 @@ async function toggleRecording() {
   } catch (err) {
     showToast(err.message || 'Recording failed', 'error');
   }
+}
+
+// ---------------------------------------------------------------------------
+// Replay transport
+// ---------------------------------------------------------------------------
+
+function fmtClock(seconds) {
+  const s = Math.max(0, Number(seconds) || 0);
+  const m = Math.floor(s / 60);
+  return `${m}:${(s - m * 60).toFixed(1).padStart(4, '0')}`;
+}
+
+function updateReplayBar(replay, paused) {
+  const bar = el('replay-bar');
+  bar.hidden = !replay;
+  if (!replay) return;
+  state.replay = replay;
+  el('replay-icon-pause').hidden = paused;
+  el('replay-icon-play').hidden = !paused;
+  const speed = el('replay-speed');
+  if (document.activeElement !== speed) speed.value = String(replay.speed);
+  if (state.seeking) return;
+  const seek = el('replay-seek');
+  const frac = replay.duration_s > 0 ? replay.position_s / replay.duration_s : 0;
+  seek.value = String(Math.round(frac * 1000));
+  paintSliderProgress(seek);
+  el('replay-time').textContent = `${fmtClock(replay.position_s)} / ${fmtClock(replay.duration_s)}`;
+  // Frames are shown 1-based; the API uses 0-based indices.
+  setUnlessFocused(el('replay-frame'), replay.frame + 1);
+  el('replay-frame').max = String(replay.frame_count);
+  el('replay-frame-total').textContent = `/ ${replay.frame_count}`;
+}
+
+function goToFrame(oneBased) {
+  if (state.current?.source_type !== 'file' || !state.replay) return;
+  const count = state.replay.frame_count;
+  const target = Math.min(count, Math.max(1, Math.round(Number(oneBased) || 1)));
+  el('replay-frame').value = String(target);
+  applyCall(api.patchReplay({ frame: target - 1 }));
+}
+
+function seekTargetSeconds() {
+  const dur = state.replay?.duration_s || 0;
+  return (Number(el('replay-seek').value) / 1000) * dur;
+}
+
+function stepReplay(direction) {
+  if (state.current?.source_type !== 'file') return;
+  applyCall(api.stepFrame(direction));
+}
+
+function restartReplay() {
+  if (state.current?.source_type !== 'file') return;
+  applyCall(api.patchReplay({ position_s: 0 }));
+  waterfall.clear();
+}
+
+function bindReplayControls() {
+  el('btn-replay-play').addEventListener('click', () => el('btn-pause').click());
+  el('btn-replay-prev').addEventListener('click', () => stepReplay(-1));
+  el('btn-replay-next').addEventListener('click', () => stepReplay(1));
+  el('btn-replay-restart').addEventListener('click', restartReplay);
+
+  const seek = el('replay-seek');
+  seek.addEventListener('input', () => {
+    state.seeking = true;
+    paintSliderProgress(seek);
+    el('replay-time').textContent = `${fmtClock(seekTargetSeconds())} / ${fmtClock(state.replay?.duration_s)}`;
+  });
+  seek.addEventListener('change', async () => {
+    await applyCall(api.patchReplay({ position_s: seekTargetSeconds() }));
+    state.seeking = false;
+    waterfall.clear();
+  });
+  onChange('replay-speed', (sel) => applyCall(api.patchReplay({ speed: parseFloat(sel.value) })));
+
+  const frameInput = el('replay-frame');
+  frameInput.addEventListener('focus', () => frameInput.select());
+  frameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      goToFrame(frameInput.value);
+      frameInput.blur();
+    } else if (e.key === 'Escape') {
+      frameInput.value = String((state.replay?.frame ?? 0) + 1);
+      frameInput.blur();
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const delta = (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 10 : 1);
+      goToFrame(Number(frameInput.value) + delta);
+    }
+  });
+  frameInput.addEventListener(
+    'wheel',
+    (e) => {
+      e.preventDefault();
+      goToFrame(Number(frameInput.value) + (e.deltaY < 0 ? 1 : -1));
+    },
+    { passive: false },
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -561,6 +819,10 @@ async function startSweep() {
   const endMhz = parseFreqInput(el('sweep-end-mhz').value);
   const dwell = parseFloat(el('sweep-dwell').value) || 0.3;
   el('sweep-error-banner').hidden = true;
+  if (state.current?.source_type === 'file') {
+    showSweepError(t('sweep_replay_blocked'));
+    return;
+  }
   if (!Number.isFinite(startMhz) || !Number.isFinite(endMhz) || endMhz <= startMhz) {
     showSweepError(t('sweep_invalid'));
     return;
@@ -661,6 +923,8 @@ function handleFrame(data) {
   lastFpsText = `${Number(data.fps).toFixed(1)} fps`;
   if (state.current) state.current.recording = data.recording;
   updateRecordingUI(data.recording);
+  syncRecordingsUsage();
+  if (data.replay) updateReplayBar(data.replay, state.current?.state === 'paused');
 
   if (data.event) {
     onLiveEvent(data.event);
@@ -866,7 +1130,10 @@ function bindUIEvents() {
   // Close dialogs when clicking the backdrop
   document.querySelectorAll('dialog').forEach((dlg) => {
     dlg.addEventListener('click', (e) => {
-      if (e.target === dlg) dlg.close();
+      if (e.target !== dlg) return;
+      const r = dlg.getBoundingClientRect();
+      const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      if (!inside) dlg.close();
     });
   });
 
@@ -875,6 +1142,8 @@ function bindUIEvents() {
     sourceDialogError(null);
     el('source-dialog').showModal();
     scanUsbDevices();
+    renderDialogRecordings(state.recordings || []);
+    refreshRecordings();
   });
   el('btn-close-source').addEventListener('click', () => el('source-dialog').close());
   el('btn-scan-usb').addEventListener('click', scanUsbDevices);
@@ -905,7 +1174,13 @@ function bindUIEvents() {
 
   // Events
   el('btn-clear-events').addEventListener('click', async () => {
-    if (!window.confirm(t('confirm_clear'))) return;
+    const confirmed = await confirmDialog({
+      title: t('confirm_clear_title'),
+      message: t('confirm_clear'),
+      confirmLabel: t('confirm_clear_ok'),
+      danger: true,
+    });
+    if (!confirmed) return;
     try {
       await api.clearEvents();
       state.recentEvents = [];
@@ -928,6 +1203,9 @@ function bindUIEvents() {
     } else if (key === 'p') el('btn-peak-hold').click();
     else if (key === 'r') el('btn-record').click();
     else if (key === 'a') spectrum.triggerAutoScale();
+    else if (e.key === ',') stepReplay(-1);
+    else if (e.key === '.') stepReplay(1);
+    else if (e.key === 'Home') restartReplay();
     else if (['1', '2', '3'].includes(key)) switchTab(TABS[Number(key) - 1]);
     else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault();
@@ -950,6 +1228,7 @@ async function init() {
     // ignore
   }
   bindUIEvents();
+  bindReplayControls();
   switchTab(location.hash.slice(1) || 'live');
 
   try {

@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 def encode_frame_payload(
     frame: SpectrumFrame,
     recording: dict[str, Any] | None = None,
+    replay: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Serialize a :class:`SpectrumFrame` cleanly with compact Base64 Int16 bins."""
     scaled = np.clip(np.rint(frame.power_db * 10.0), -1600, 200).astype("<i2")
@@ -40,6 +41,7 @@ def encode_frame_payload(
         "peaks": [p.model_dump() for p in frame.peaks],
         "fps": round(frame.fps, 1),
         "recording": recording,
+        "replay": replay,
         "event": frame.event.model_dump(mode="json") if frame.event is not None else None,
     }
 
@@ -47,11 +49,12 @@ def encode_frame_payload(
 class SpectrumBroadcaster:
     """Thread-safe hub pushing frames and status updates to connected WebSockets."""
 
-    def __init__(self, recording_provider: Any = None) -> None:
+    def __init__(self, recording_provider: Any = None, replay_provider: Any = None) -> None:
         self._lock = threading.Lock()
         self._loop: asyncio.AbstractEventLoop | None = None
         self._clients: set[asyncio.Queue[dict[str, Any]]] = set()
         self._recording_provider = recording_provider
+        self._replay_provider = replay_provider
 
     def set_loop(self, loop: asyncio.AbstractEventLoop | None) -> None:
         with self._lock:
@@ -110,7 +113,8 @@ class SpectrumBroadcaster:
 
     def on_frame(self, frame: SpectrumFrame) -> None:
         rec = self._recording_provider() if callable(self._recording_provider) else None
-        self.broadcast(encode_frame_payload(frame, recording=rec))
+        replay = self._replay_provider() if callable(self._replay_provider) else None
+        self.broadcast(encode_frame_payload(frame, recording=rec, replay=replay))
 
     def on_status(self, status: dict[str, Any]) -> None:
         self.broadcast({"type": "status", "status": status})

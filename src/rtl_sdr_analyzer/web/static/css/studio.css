@@ -428,6 +428,7 @@ dialog.ams-dialogo::backdrop {
   color: var(--ams-sel-texto);
 }
 
+/* Number centered in the cell; a spacer as wide as "MHz" balances the unit on the right. */
 .freq-display {
   display: flex;
   align-items: baseline;
@@ -437,16 +438,32 @@ dialog.ams-dialogo::backdrop {
   min-width: 0;
 }
 
+.freq-display::before {
+  content: "";
+  flex: none;
+  width: 3.2ch;
+  font-size: 12px;
+}
+
 .freq-display input {
-  width: 100%;
+  flex: 0 1 auto;
+  width: 8ch;
   min-width: 0;
   border: 0;
   background: transparent;
   color: var(--ams-texto);
   font-size: 21px;
   font-weight: 500;
-  text-align: right;
+  text-align: center;
   padding: 0;
+}
+
+@supports (field-sizing: content) {
+  .freq-display input {
+    width: auto;
+    field-sizing: content;
+    min-width: 3ch;
+  }
 }
 
 .freq-display input:focus {
@@ -1094,5 +1111,243 @@ dialog.ams-dialogo {
   }
   .waterfall-wrap {
     height: 150px;
+  }
+}
+
+/* ================= CONFIRM DIALOG ================= */
+dialog.confirm-dialog {
+  width: min(420px, calc(100vw - 28px));
+}
+
+.confirm-dialog form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.confirm-message {
+  margin: 0;
+  color: var(--ams-texto-2, var(--ams-texto));
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.ams-btn.is-danger {
+  background: var(--ams-mal);
+  border-color: var(--ams-borde);
+  color: var(--ams-fondo);
+}
+
+/* ================= RECORDINGS ================= */
+.rec-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rec-row .rec-link {
+  flex: 1;
+  min-width: 0;
+}
+
+.rec-link span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 8px;
+}
+
+.icon-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1.5px solid var(--ams-linea);
+  border-radius: var(--ams-radio-peq);
+  background: var(--ams-superficie);
+  color: var(--ams-texto);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  border-color: var(--ams-borde);
+}
+
+.icon-btn--danger:hover {
+  color: var(--ams-mal);
+  border-color: var(--ams-mal);
+}
+
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.rec-item-actions {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+
+.rec-item-main {
+  min-width: 0;
+}
+
+.rec-item-main strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.usb-item.is-active {
+  border-color: var(--ams-marca);
+}
+
+.replay-note {
+  margin: 0 0 8px;
+  padding: 6px 9px;
+  font-size: 12px;
+  border: 1.5px dashed var(--ams-marca);
+  border-radius: var(--ams-radio-peq);
+}
+
+.tune-locked .preset-btn,
+.tune-locked .tune-ctl {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* ================= REPLAY TRANSPORT ================= */
+.replay-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border: var(--ams-borde-ancho) solid var(--ams-borde);
+  border-radius: var(--ams-radio);
+  background: var(--ams-superficie);
+}
+
+.replay-bar[hidden] {
+  display: none;
+}
+
+.replay-buttons {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+
+.replay-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 30px;
+  padding: 0;
+  border: 1.5px solid var(--ams-linea);
+  border-radius: var(--ams-radio-peq);
+  background: var(--ams-superficie);
+  color: var(--ams-texto);
+  cursor: pointer;
+}
+
+.replay-btn svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+}
+
+.replay-btn:hover {
+  border-color: var(--ams-borde);
+  background: var(--ams-superficie-2);
+}
+
+.replay-btn--main {
+  width: 38px;
+  background: var(--ams-marca);
+  border-color: var(--ams-borde);
+  color: var(--ams-sobre-marca);
+}
+
+.replay-btn--main:hover {
+  background: var(--ams-marca-hover);
+}
+
+.replay-seek {
+  flex: 1;
+  min-width: 80px;
+}
+
+.replay-time {
+  flex: none;
+  font-size: 12px;
+  min-width: 13ch;
+  text-align: right;
+}
+
+.replay-speed {
+  flex: none;
+}
+
+.replay-frame {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--ams-gris);
+}
+
+.replay-frame input {
+  width: 7ch;
+  height: 28px;
+  padding: 0 6px;
+  border: 1.5px solid var(--ams-linea);
+  border-radius: var(--ams-radio-peq);
+  background: var(--ams-fondo);
+  color: var(--ams-texto);
+  font: inherit;
+  font-size: 13px;
+  text-align: right;
+  -moz-appearance: textfield;
+}
+
+.replay-frame input::-webkit-inner-spin-button,
+.replay-frame input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.replay-frame input:focus {
+  border-color: var(--ams-marca);
+  outline: none;
+}
+
+.replay-frame #replay-frame-total {
+  color: var(--ams-texto);
+  min-width: 5ch;
+}
+
+@media (max-width: 700px) {
+  .replay-bar {
+    flex-wrap: wrap;
+  }
+  .replay-seek {
+    order: 5;
+    flex-basis: 100%;
   }
 }

@@ -9,6 +9,7 @@ from typing import Any
 
 import numpy as np
 
+from rtl_sdr_analyzer.recording.metadata import write_sidecar
 from rtl_sdr_analyzer.sources.base import SDRSource
 
 logger = logging.getLogger(__name__)
@@ -106,6 +107,13 @@ class IQRecorder:
             self._file.close()
             self._file = None
             if self.format == "raw":
+                write_sidecar(
+                    self.output_path,
+                    center_freq_hz=self.center_freq,
+                    sample_rate_hz=self.sample_rate,
+                    gain_db=self.gain,
+                    samples=self._samples_written,
+                )
                 logger.info(
                     "Saved raw IQ file %s (%d samples, %d bytes)",
                     self.output_path,

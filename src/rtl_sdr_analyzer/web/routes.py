@@ -22,6 +22,7 @@ from rtl_sdr_analyzer.engine.sweeper import (
     SweepProgress,
     SweepResult,
 )
+from rtl_sdr_analyzer.recording.metadata import IQ_SUFFIXES, read_metadata, sidecar_path
 from rtl_sdr_analyzer.sources.base import SDRSourceError
 from rtl_sdr_analyzer.sources.usb import get_usb_diagnostics
 from rtl_sdr_analyzer.storage.database import EventStore
@@ -65,6 +66,19 @@ class SourceSwitchRequest(BaseModel):
     replay_path: str | None = None
     tcp_host: str | None = None
     tcp_port: int | None = Field(default=None, ge=1, le=65535)
+    recording: str | None = Field(
+        default=None, description="Replay this file from the recordings directory"
+    )
+
+
+class ReplayPatchRequest(BaseModel):
+    position_s: float | None = Field(default=None, ge=0.0)
+    frame: int | None = Field(default=None, ge=0, description="0-based frame; pauses on it")
+    speed: float | None = Field(default=None, gt=0.0)
+
+
+class StepRequest(BaseModel):
+    direction: int = Field(default=1, description="1 = next frame, -1 = previous frame")
 
 
 class RecordingStartRequest(BaseModel):
@@ -178,24 +192,52 @@ class SweepCoordinator:
             }
 
 
+def _recording_info(path: Path, st: Any) -> dict[str, Any]:
+    is_npz = path.suffix.lower() == ".npz"
+    meta = read_metadata(path)
+    sample_rate = meta["sample_rate_hz"]
+    bytes_per_sample = 8 if is_npz else 2  # complex64 vs interleaved uint8 I/Q
+    return {
+        "filename": path.name,
+        "size_bytes": st.st_size,
+        "modified": datetime.fromtimestamp(st.st_mtime, tz=UTC).isoformat(),
+        "format": "numpy" if is_npz else "raw",
+        "center_freq_hz": meta["center_freq_hz"],
+        "sample_rate_hz": sample_rate,
+        "duration_s": round(st.st_size / bytes_per_sample / sample_rate, 2)
+        if sample_rate
+        else None,
+    }
+
+
 def _list_recordings(rec_dir: Path) -> list[dict[str, Any]]:
     if not rec_dir.is_dir():
         return []
     files = [
-        (p, p.stat())
-        for p in rec_dir.iterdir()
-        if p.is_file() and p.suffix.lower() in (".raw", ".cu8", ".npz")
+        (p, p.stat()) for p in rec_dir.iterdir() if p.is_file() and p.suffix.lower() in IQ_SUFFIXES
     ]
     files.sort(key=lambda item: item[1].st_mtime, reverse=True)
-    return [
-        {
-            "filename": p.name,
-            "size_bytes": st.st_size,
-            "modified": datetime.fromtimestamp(st.st_mtime, tz=UTC).isoformat(),
-            "format": "numpy" if p.suffix.lower() == ".npz" else "raw",
-        }
-        for p, st in files
-    ]
+    return [_recording_info(p, st) for p, st in files]
+
+
+def _resolve_recording(rec_dir: Path, filename: str) -> Path:
+    """Map a bare filename to a file directly inside ``rec_dir`` (no traversal)."""
+    if (
+        Path(filename).name != filename
+        or ".." in filename
+        or "/" in filename
+        or "\\" in filename
+        or Path(filename).suffix.lower() not in IQ_SUFFIXES
+    ):
+        raise HTTPException(status_code=400, detail="Invalid recording filename")
+    root = rec_dir.resolve()
+    target = (root / filename).resolve()
+    if target.parent != root or not target.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="Recording not found in the recordings folder (moved or deleted?)",
+        )
+    return target
 
 
 def _memory_event_rows(engine: SpectrumEngine, limit: int) -> list[dict[str, Any]]:
@@ -300,12 +342,18 @@ def create_api_router(
 
     @router.post("/source")
     def post_source(req: SourceSwitchRequest) -> dict[str, Any]:
+        mode = req.mode
+        replay_path = req.replay_path
+        if req.recording is not None:
+            rec_dir = Path(engine.settings.storage.recordings_dir)
+            replay_path = str(_resolve_recording(rec_dir, req.recording))
+            mode = "file"
         try:
             engine.switch_source(
-                mode=req.mode,
+                mode=mode,
                 device_index=req.device_index,
                 library_path=req.library_path,
-                replay_path=req.replay_path,
+                replay_path=replay_path,
                 tcp_host=req.tcp_host,
                 tcp_port=req.tcp_port,
                 allow_simulated_fallback=False,
@@ -323,6 +371,27 @@ def create_api_router(
     def resume_stream() -> dict[str, Any]:
         engine.resume()
         return {"state": engine.get_status()["state"]}
+
+    @router.patch("/replay")
+    def patch_replay(req: ReplayPatchRequest) -> dict[str, Any]:
+        try:
+            if req.speed is not None:
+                engine.replay_set_speed(req.speed)
+            if req.position_s is not None:
+                engine.replay_seek(req.position_s)
+            if req.frame is not None:
+                engine.replay_seek_frame(req.frame)
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
+        return engine.get_status()
+
+    @router.post("/stream/step")
+    def step_stream(req: StepRequest) -> dict[str, Any]:
+        try:
+            engine.step_frame(-1 if req.direction < 0 else 1)
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
+        return engine.get_status()
 
     @router.post("/recording/start")
     def recording_start(req: RecordingStartRequest) -> dict[str, Any]:
@@ -344,18 +413,24 @@ def create_api_router(
 
     @router.get("/recordings/{filename}")
     def download_recording(filename: str) -> FileResponse:
-        if (
-            Path(filename).name != filename
-            or ".." in filename
-            or "/" in filename
-            or "\\" in filename
-        ):
-            raise HTTPException(status_code=400, detail="Invalid filename")
-        rec_dir = Path(engine.settings.storage.recordings_dir).resolve()
-        target = (rec_dir / filename).resolve()
-        if not target.is_relative_to(rec_dir) or not target.is_file():
-            raise HTTPException(status_code=404, detail="Recording not found")
+        target = _resolve_recording(Path(engine.settings.storage.recordings_dir), filename)
         return FileResponse(path=target, filename=filename, media_type="application/octet-stream")
+
+    @router.delete("/recordings/{filename}")
+    def delete_recording(filename: str) -> dict[str, Any]:
+        rec_dir = Path(engine.settings.storage.recordings_dir)
+        target = _resolve_recording(rec_dir, filename)
+        if target in engine.protected_paths():
+            raise HTTPException(
+                status_code=409,
+                detail="Recording is in use (recording or replaying); stop it first",
+            )
+        try:
+            target.unlink()
+            sidecar_path(target).unlink(missing_ok=True)
+        except OSError as exc:
+            raise HTTPException(status_code=409, detail=f"Could not delete recording: {exc}")
+        return {"deleted": filename, "recordings": _list_recordings(rec_dir)}
 
     @router.post("/sweep")
     def start_sweep(req: SweepStartRequest) -> dict[str, Any]:

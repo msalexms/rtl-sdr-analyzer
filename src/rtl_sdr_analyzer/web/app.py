@@ -82,7 +82,10 @@ def create_app(
     """Create and configure the FastAPI application."""
     resolved_settings = settings or engine.settings
     loopback_only = _hostname(resolved_settings.web.host) in _LOOPBACK_HOSTS
-    broadcaster = SpectrumBroadcaster(recording_provider=engine.recording_summary)
+    broadcaster = SpectrumBroadcaster(
+        recording_provider=engine.recording_summary,
+        replay_provider=engine.replay_summary,
+    )
     sweeper = SweepCoordinator(engine=engine, store=store, broadcaster=broadcaster)
 
     @asynccontextmanager

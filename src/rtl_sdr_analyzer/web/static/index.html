@@ -96,6 +96,40 @@
                 <span id="rec-label" data-i18n="btn_record">Record IQ</span>
               </button>
             </div>
+
+            <div class="replay-bar" id="replay-bar" role="group" data-i18n-aria="rp_group" hidden>
+              <div class="replay-buttons">
+                <button type="button" class="replay-btn" id="btn-replay-restart" title="Home" data-i18n-aria="rp_restart">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h2v14H4zM13 5v14L6 12zM21 5v14l-7-7z"/></svg>
+                </button>
+                <button type="button" class="replay-btn" id="btn-replay-prev" title="," data-i18n-aria="rp_prev">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6zM19 5v14L9 12z"/></svg>
+                </button>
+                <button type="button" class="replay-btn replay-btn--main" id="btn-replay-play" title="Space" data-i18n-aria="rp_play_pause">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" id="replay-icon-pause"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+                  <svg viewBox="0 0 24 24" aria-hidden="true" id="replay-icon-play" hidden><path d="M7 4v16l13-8z"/></svg>
+                </button>
+                <button type="button" class="replay-btn" id="btn-replay-next" title="." data-i18n-aria="rp_next">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14l10-7zM16 5h2v14h-2z"/></svg>
+                </button>
+              </div>
+              <input class="ams-rango replay-seek" type="range" id="replay-seek" min="0" max="1000" step="1" value="0" data-i18n-aria="rp_seek">
+              <label class="replay-frame ams-mono">
+                <span data-i18n="rp_frame">Frame</span>
+                <input type="number" id="replay-frame" min="1" step="1" value="1" inputmode="numeric" data-i18n-aria="rp_frame_input">
+                <span id="replay-frame-total">/ 1</span>
+              </label>
+              <span class="ams-mono replay-time" id="replay-time">0:00.0 / 0:00.0</span>
+              <div class="ams-select compact-select replay-speed">
+                <select id="replay-speed" data-i18n-aria="rp_speed">
+                  <option value="0.25">0.25×</option>
+                  <option value="0.5">0.5×</option>
+                  <option value="1" selected>1×</option>
+                  <option value="2">2×</option>
+                  <option value="4">4×</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <!-- Right: Clean Minimal Control Rail -->
@@ -105,15 +139,16 @@
               <span class="ams-rotulo section-title" data-i18n="sec_tuning">Tuning</span>
               <div class="ams-group">
                 <div class="tuner-bar">
-                  <button type="button" class="tuner-step" id="btn-freq-down-big" title="-1 MHz">«</button>
-                  <button type="button" class="tuner-step" id="btn-freq-down" title="-100 kHz">‹</button>
+                  <button type="button" class="tuner-step tune-ctl" id="btn-freq-down-big" title="-1 MHz">«</button>
+                  <button type="button" class="tuner-step tune-ctl" id="btn-freq-down" title="-100 kHz">‹</button>
                   <div class="freq-display">
-                    <input class="ams-mono" id="input-freq-mhz" type="text" inputmode="decimal" value="98.000" aria-label="Center frequency in MHz">
+                    <input class="ams-mono tune-ctl" id="input-freq-mhz" type="text" inputmode="decimal" value="98.000" aria-label="Center frequency in MHz">
                     <span class="ams-mono freq-unit">MHz</span>
                   </div>
-                  <button type="button" class="tuner-step" id="btn-freq-up" title="+100 kHz">›</button>
-                  <button type="button" class="tuner-step" id="btn-freq-up-big" title="+1 MHz">»</button>
+                  <button type="button" class="tuner-step tune-ctl" id="btn-freq-up" title="+100 kHz">›</button>
+                  <button type="button" class="tuner-step tune-ctl" id="btn-freq-up-big" title="+1 MHz">»</button>
                 </div>
+                <p class="replay-note ams-mono" id="replay-note" hidden></p>
                 <div class="preset-grid" id="preset-grid">
                   <button type="button" class="preset-btn" data-freq="98.0">FM 98</button>
                   <button type="button" class="preset-btn" data-freq="121.5">Air 121.5</button>
@@ -393,6 +428,14 @@
       </div>
 
       <div class="ams-caja ams-caja--plana dialog-section">
+        <div>
+          <h3 class="ams-h3" data-i18n="dlg_rec_title">Recordings</h3>
+          <p class="ams-gris small-note" data-i18n="dlg_rec_desc">Replay a saved IQ capture in a loop at real-time speed.</p>
+        </div>
+        <div id="dialog-recordings-list" class="usb-list"></div>
+      </div>
+
+      <div class="ams-caja ams-caja--plana dialog-section">
         <div class="row-between">
           <div>
             <h3 class="ams-h3" data-i18n="dlg_sim_title">Simulated RF Demo</h3>
@@ -510,6 +553,18 @@
         </p>
       </div>
     </div>
+  </dialog>
+
+  <!-- ==================== CONFIRM MODAL ==================== -->
+  <dialog class="ams-dialogo confirm-dialog" id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+    <form method="dialog">
+      <h2 class="ams-h3" id="confirm-title">Confirm</h2>
+      <p class="confirm-message" id="confirm-message"></p>
+      <div class="confirm-actions">
+        <button type="submit" value="cancel" class="ams-btn ams-btn--peq" id="confirm-cancel" autofocus>Cancel</button>
+        <button type="submit" value="ok" class="ams-btn ams-btn--peq ams-btn--principal" id="confirm-ok">OK</button>
+      </div>
+    </form>
   </dialog>
 
   <div class="ams-aviso-flotante" id="studio-toast" role="status" aria-live="polite" hidden></div>

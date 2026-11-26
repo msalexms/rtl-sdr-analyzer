@@ -1,6 +1,7 @@
 """Typer CLI application for RTL-SDR Analyzer (AMSTech)."""
 
 import logging
+import sys
 import threading
 import webbrowser
 from pathlib import Path
@@ -167,7 +168,8 @@ def main_callback(
 ) -> None:
     """Launch the AMSTech Web Studio when invoked without a subcommand."""
     if ctx.invoked_subcommand is None:
-        _launch_studio()
+        # A double-clicked standalone build has no terminal to read a URL from: open it.
+        _launch_studio(open_browser=bool(getattr(sys, "frozen", False)))
 
 
 @app.command()

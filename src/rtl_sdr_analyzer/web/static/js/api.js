@@ -35,6 +35,12 @@ export const api = {
   getEvents: (limit = 100) => request(`/api/events?limit=${limit}`),
   getStats: () => request('/api/stats'),
   clearEvents: () => request('/api/events', { method: 'DELETE' }),
+  listRecordings: () => request('/api/recordings'),
+  patchReplay: (body) => request('/api/replay', { method: 'PATCH', body: JSON.stringify(body) }),
+  stepFrame: (direction) =>
+    request('/api/stream/step', { method: 'POST', body: JSON.stringify({ direction }) }),
+  deleteRecording: (filename) =>
+    request(`/api/recordings/${encodeURIComponent(filename)}`, { method: 'DELETE' }),
 };
 
 const LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;

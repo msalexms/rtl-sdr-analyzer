@@ -63,7 +63,15 @@ def find_librtlsdr(explicit_path: str | None = None) -> Path | None:
             if found is not None:
                 return found
 
-    # 2. System loader / PATH lookup
+    # 2. Library shipped inside a frozen (PyInstaller) build
+    if getattr(sys, "frozen", False):
+        for bundle_dir in (getattr(sys, "_MEIPASS", None), Path(sys.executable).parent):
+            if bundle_dir:
+                found = _resolve_candidate(bundle_dir)
+                if found is not None:
+                    return found
+
+    # 3. System loader / PATH lookup
     which_lib = ctypes.util.find_library("rtlsdr")
     if which_lib:
         p = Path(which_lib)
@@ -71,14 +79,14 @@ def find_librtlsdr(explicit_path: str | None = None) -> Path | None:
             return p.resolve()
         return p
 
-    # 3. Project-local libs directory
+    # 4. Project-local libs directory
     project_libs = Path.cwd() / "libs"
     if project_libs.is_dir():
         found = _resolve_candidate(project_libs)
         if found is not None:
             return found
 
-    # 4. Platform-specific common directories
+    # 5. Platform-specific common directories
     search_dirs: list[Path] = []
     if sys.platform == "win32":
         search_dirs.extend(

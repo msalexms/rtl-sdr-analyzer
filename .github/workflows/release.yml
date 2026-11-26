@@ -1,0 +1,221 @@
+name: Release
+
+# Push a tag like v3.0.0b1 to publish:
+#   - wheel + sdist to PyPI (trusted publishing, no token)
+#   - standalone builds for Windows, macOS (arm64 + x64) and Linux (x64 + arm64)
+#   - multi-arch Docker image to ghcr.io
+#   - a GitHub Release (marked pre-release for a/b/rc versions) with all archives
+#
+# "Run workflow" (manual) builds and smoke-tests everything without publishing.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # RTL-SDR Blog Windows driver release bundled into the Windows build
+  RTLSDR_BLOG_URL: https://github.com/rtlsdrblog/rtl-sdr-blog/releases/download/V1.4.0/Release.zip
+  RTLSDR_BLOG_SHA256: 7ef33f1304647f65e5e0fde43637a73d54f076e91e651a3cecc4f55a17fd9815
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev,test]"
+      - run: ruff check src tests
+      - run: mypy --strict src
+      - run: pytest
+
+  python-dist:
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(python -c "import re,pathlib;print(re.search(r'__version__ = \"(.+?)\"', pathlib.Path('src/rtl_sdr_analyzer/__init__.py').read_text()).group(1))")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION" =~ (a|b|rc)[0-9]+$ ]]; then echo "prerelease=true" >> "$GITHUB_OUTPUT"; else echo "prerelease=false" >> "$GITHUB_OUTPUT"; fi
+          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" != "v${VERSION}" ]]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match package version v${VERSION}"; exit 1
+          fi
+      - run: pip install build twine
+      - run: python -m build
+      - run: twine check --strict dist/*
+      - name: Wheel must contain the web UI
+        run: python -c "import zipfile,glob,sys; n=zipfile.ZipFile(glob.glob('dist/*.whl')[0]).namelist(); sys.exit(0 if any(x.endswith('web/static/index.html') for x in n) else 'index.html missing from wheel')"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: python-dist
+          path: dist/
+
+  standalone:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, target: windows-x64 }
+          - { os: macos-latest, target: macos-arm64 }
+          - { os: macos-15-intel, target: macos-x64 }
+          - { os: ubuntu-22.04, target: linux-x64 }
+          - { os: ubuntu-22.04-arm, target: linux-arm64 }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ".[bundle]"
+
+      - name: Fetch RTL-SDR Blog driver (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          curl -fsSL -o rtlsdr-blog.zip "$RTLSDR_BLOG_URL"
+          echo "$RTLSDR_BLOG_SHA256  rtlsdr-blog.zip" | sha256sum -c -
+          mkdir -p native && unzip -q rtlsdr-blog.zip -d rtlsdr-blog
+          cp rtlsdr-blog/x64/{rtlsdr.dll,pthreadVC2.dll,msvcr100.dll} native/
+          echo "RTLSDR_NATIVE_DIR=$PWD/native" >> "$GITHUB_ENV"
+
+      - name: Build
+        run: pyinstaller packaging/rtl-sdr-analyzer.spec --noconfirm --log-level WARN
+
+      - name: Smoke test (version, devices, web server in demo mode)
+        run: |
+          APP=dist/rtl-sdr-analyzer/rtl-sdr-analyzer
+          "$APP" --version
+          "$APP" devices || true
+          "$APP" serve --source simulated --port 8799 > server.log 2>&1 &
+          SERVER_PID=$!
+          for i in $(seq 1 60); do curl -fsS http://127.0.0.1:8799/api/health && break; sleep 1; done
+          curl -fsS http://127.0.0.1:8799/api/health | grep -q '"engine_state":"running"'
+          curl -fsS -o /dev/null http://127.0.0.1:8799/static/js/main.js
+          kill "$SERVER_PID" || true
+          cat server.log | tail -20
+
+      - name: Package
+        id: package
+        run: |
+          VERSION=$(dist/rtl-sdr-analyzer/rtl-sdr-analyzer --version | awk '{print $2}')
+          NAME="rtl-sdr-analyzer-${VERSION}-${{ matrix.target }}"
+          mkdir -p "release/$NAME"
+          cp -R dist/rtl-sdr-analyzer "release/$NAME/"
+          cp LICENSE packaging/README-FIRST.txt packaging/THIRD_PARTY_NOTICES.md "release/$NAME/"
+          cd release
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            python -c "import shutil; shutil.make_archive('$NAME', 'zip', '.', '$NAME')"
+          else
+            tar -czf "$NAME.tar.gz" "$NAME"
+          fi
+          ls -la
+      - uses: actions/upload-artifact@v4
+        with:
+          name: standalone-${{ matrix.target }}
+          path: |
+            release/*.zip
+            release/*.tar.gz
+
+  publish-pypi:
+    if: github.ref_type == 'tag'
+    needs: [python-dist, standalone]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/rtl-sdr-analyzer/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  docker:
+    if: github.ref_type == 'tag'
+    needs: [python-dist]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Image tags
+        id: tags
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          VERSION="${{ needs.python-dist.outputs.version }}"
+          TAGS="$IMAGE:$VERSION"
+          if [[ "${{ needs.python-dist.outputs.prerelease }}" == "true" ]]; then TAGS="$TAGS,$IMAGE:beta"; else TAGS="$TAGS,$IMAGE:latest"; fi
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+
+  github-release:
+    if: github.ref_type == 'tag'
+    needs: [python-dist, standalone, publish-pypi]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+          merge-multiple: true
+      - name: Release notes
+        run: |
+          VERSION="${{ needs.python-dist.outputs.version }}"
+          {
+            echo "## Install"
+            echo
+            echo "| Platform | Download / command |"
+            echo "|---|---|"
+            echo "| **Windows** (no Python needed) | \`rtl-sdr-analyzer-${VERSION}-windows-x64.zip\` → run \`rtl-sdr-analyzer.exe\` |"
+            echo "| **macOS** | \`brew install librtlsdr\` then \`pipx install rtl-sdr-analyzer==${VERSION}\` (or the macos archive) |"
+            echo "| **Linux** | \`sudo apt install librtlsdr0 rtl-sdr\` then \`pipx install rtl-sdr-analyzer==${VERSION}\` (or the linux archive) |"
+            echo "| **Raspberry Pi / server** | \`docker run --device /dev/bus/usb -p 8080:8080 ghcr.io/${GITHUB_REPOSITORY,,}:${VERSION}\` |"
+            echo
+            echo "Each archive includes \`README-FIRST.txt\` (driver setup, unsigned-app warnings)."
+            echo
+            awk '/^## \[/{n++} n==1' CHANGELOG.md
+          } > release-notes.md
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: rtl-sdr-analyzer ${{ needs.python-dist.outputs.version }}
+          body_path: release-notes.md
+          prerelease: ${{ needs.python-dist.outputs.prerelease == 'true' }}
+          files: |
+            artifacts/*.whl
+            artifacts/*.tar.gz
+            artifacts/*.zip

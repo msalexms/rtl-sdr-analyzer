@@ -1,13 +1,14 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
+requires = ["setuptools>=77.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "rtl-sdr-analyzer"
-version = "3.0.0"
+dynamic = ["version"]
 description = "Real-time RF spectrum analyzer, signal detector, and wideband sweeper by AMSTech"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 authors = [
     { name = "Alejandro Martín (AMSTech)", email = "info@amstech.dev" },
@@ -16,10 +17,13 @@ keywords = ["rtl-sdr", "spectrum-analyzer", "rf", "dsp", "sdr", "amstech"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+    "Environment :: Web Environment",
+    "Topic :: Communications :: Ham Radio",
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
@@ -39,6 +43,9 @@ dev = [
     "mypy>=1.11,<2.0",
     "types-PyYAML>=6.0,<7.0",
 ]
+bundle = [
+    "pyinstaller>=6.10,<7.0",
+]
 test = [
     "pytest>=8.0,<9.0",
     "pytest-asyncio>=0.24,<1.0",
@@ -53,6 +60,9 @@ rtl-sdr-analyzer = "rtl_sdr_analyzer.cli.app:app"
 Homepage = "https://github.com/msalexms/rtl-sdr-analyzer"
 Repository = "https://github.com/msalexms/rtl-sdr-analyzer"
 Issues = "https://github.com/msalexms/rtl-sdr-analyzer/issues"
+
+[tool.setuptools.dynamic]
+version = { attr = "rtl_sdr_analyzer.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]

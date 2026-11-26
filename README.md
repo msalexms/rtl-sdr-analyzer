@@ -53,19 +53,30 @@ Instead of drowning you in dozens of obscure demodulator panels or brittle matpl
 
 ### 1. Install
 
+> [!NOTE]
+> This is a **beta** (`3.0.0b1`). Downloads are on the [Releases page](https://github.com/msalexms/rtl-sdr-analyzer/releases).
+
+| Platform | Recommended | Dongle library |
+|---|---|---|
+| **Windows** | Download `rtl-sdr-analyzer-…-windows-x64.zip`, unzip, run `rtl-sdr-analyzer.exe` (no Python needed) | Included (RTL-SDR Blog driver, V3/V4). Install the WinUSB driver once with [Zadig](https://zadig.akeo.ie). |
+| **macOS** | `pipx install --pip-args=--pre rtl-sdr-analyzer` | `brew install librtlsdr` |
+| **Linux** | `pipx install --pip-args=--pre rtl-sdr-analyzer` | `sudo apt install librtlsdr0 rtl-sdr` (Debian/Ubuntu) · `sudo dnf install rtl-sdr` (Fedora) |
+| **Raspberry Pi / server** | `docker run -d --device /dev/bus/usb -p 8080:8080 -v sdr-data:/data ghcr.io/msalexms/rtl-sdr-analyzer:beta` | Included in the image |
+
+Standalone archives for macOS (arm64/x64) and Linux (x64/arm64) are also published; each has a `README-FIRST.txt`.
+
+- **Windows SmartScreen / macOS Gatekeeper:** beta builds are not code-signed yet. Windows: *More info → Run anyway*. macOS archive: `xattr -dr com.apple.quarantine rtl-sdr-analyzer`.
+- **Linux "device busy":** blacklist the DVB-T driver once: `echo 'blacklist dvb_usb_rtl28xxu' | sudo tee /etc/modprobe.d/blacklist-rtl.conf`, then replug the dongle.
+- **Docker exposes the Studio to your network without authentication.** Only run it on networks you trust.
+
+From source (development):
+
 ```bash
 git clone https://github.com/msalexms/rtl-sdr-analyzer.git
 cd rtl-sdr-analyzer
-
-python -m venv .venv
-source .venv/bin/activate        # Linux / macOS
-# .venv\Scripts\activate         # Windows
-
-pip install -e .
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -e ".[dev,test]"
 ```
-
-> [!NOTE]
-> **USB Drivers:** On Linux/macOS, install `librtlsdr` (`sudo apt install librtlsdr0 rtl-sdr` or `brew install librtlsdr`). On Windows, install the WinUSB driver with Zadig and ensure `rtlsdr.dll` is on `PATH`, set via `RTL_SDR_LIB`, or bundled in a `sdrpp` / `rtl-sdr` folder.
 
 ### 2. Check your dongle
 

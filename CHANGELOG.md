@@ -2,9 +2,22 @@
 
 All notable changes to this project are documented in this file.
 
-## [Unreleased]
+## [3.0.0b1] - 2026-11-26
+
+First public beta: standalone builds for Windows, macOS and Linux, PyPI package and Docker image.
+
+### Added
+- **Manage recordings from the Web Studio**: replay any capture from the recordings folder (Source → Recordings, or ▶ in the sidebar) and delete it (only files still inside the recordings folder; files in use are protected).
+- Raw recordings now write a `.raw.json` sidecar (center frequency, sample rate, gain) so replays use the right axis; older files fall back to `<freq>MHz` in the filename.
+- In-app confirmation dialog replaces browser `confirm()` pop-ups.
+- **Replay transport**: play/pause, previous/next frame (`,` / `.`), restart (`Home`), seek bar with time readout, frame counter with go-to-frame (`frame` in `PATCH /api/replay`) and 0.25×–4× speed (`PATCH /api/replay`, `POST /api/stream/step`).
+
+### Fixed (UI)
+- Sidebar delete buttons stayed disabled after a recording stopped or a replay ended.
+- Center-frequency number is now truly centered in the tuner.
 
 ### Fixed
+- File replay played at ~8 % speed and loaded the whole file into RAM; it now plays at 1× from a memory-mapped file, with tuning locked during playback.
 - **Gapless live IQ recording & real-time `rtl_tcp`**: the engine read only `fft_size × averaging` samples per frame (~8 % of the stream), so Web Studio recordings had gaps and `rtl_tcp` drifted behind real time. Real-time sources and active recordings are now drained completely.
 - **Spectrum/sweep plots no longer hide narrow carriers** when there are more FFT bins than pixels (per-column max decimation, as the waterfall already did).
 - **SQLite**: one persistent connection instead of a new connection + PRAGMAs per event; `:memory:` databases now keep their data.

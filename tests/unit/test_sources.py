@@ -260,3 +260,32 @@ class TestSimulatedAndReplayAndFactory:
             pytest.raises(SDRConnectionError),
         ):
             create_source(s, allow_simulated_fallback=False)
+
+    def test_replay_uses_recording_metadata_and_keeps_tuning_fixed(self, tmp_path: Path) -> None:
+        from rtl_sdr_analyzer.recording.recorder import IQRecorder
+        from rtl_sdr_analyzer.sources.base import SDRConfigurationError
+
+        rec_path = tmp_path / "iq_433.920MHz_test.raw"
+        with IQRecorder(rec_path, format="raw", sample_rate=1.024e6, center_freq=433.92e6) as rec:
+            rec.write_samples(np.full(4096, 0.5 - 0.25j, dtype=np.complex64))
+        assert (tmp_path / "iq_433.920MHz_test.raw.json").is_file()
+
+        # Defaults are deliberately wrong: metadata from the sidecar must win.
+        with FileReplaySource(
+            rec_path, center_freq=98e6, sample_rate=2.048e6, realtime=False
+        ) as src:
+            assert src.center_freq == 433.92e6
+            assert src.sample_rate == 1.024e6
+            iq = src.read_samples(6000)  # wraps past EOF from a memmap
+            assert len(iq) == 6000
+            assert np.allclose(iq[:10], 0.5 - 0.25j, atol=0.01)
+            src.set_center_freq(433.92e6)  # no-op is fine
+            with pytest.raises(SDRConfigurationError):
+                src.set_center_freq(100e6)
+
+    def test_replay_without_metadata_parses_frequency_from_name(self, tmp_path: Path) -> None:
+        path = tmp_path / "capture_868.300MHz.cu8"
+        path.write_bytes(bytes([128, 128] * 64))
+        with FileReplaySource(path, sample_rate=2.4e6, realtime=False) as src:
+            assert src.center_freq == 868.3e6
+            assert src.sample_rate == 2.4e6
